@@ -1,10 +1,10 @@
 use crate::{
     client::Client,
     types::{
-        LolChatConversationMessageResource, LolChatFriendResource, LolLobbyInvitationType,
-        LolLobbyLobbyChangeGameDto, LolLobbyLobbyCustomGameConfiguration,
-        LolLobbyLobbyCustomGameLobby, LolLobbyLobbyInvitationDto,
-        LolLobbyQueueCustomGameSpectatorPolicy, LolLobbyQueueGameTypeConfig,
+        LolChatConversationMessageResource, LolChatFriendResource, LolLobbyLobbyChangeGameDto,
+        LolLobbyLobbyCustomGameConfiguration, LolLobbyLobbyCustomGameLobby,
+        LolLobbyLobbyInvitationDto, LolLobbyQueueCustomGameSpectatorPolicy,
+        LolLobbyQueueGameTypeConfig,
     },
 };
 use eyre::{ContextCompat, Result};
@@ -109,9 +109,7 @@ pub fn invite_to_lobby(client: &Client, summoners: &[u64]) -> Result<()> {
     let body = summoners
         .iter()
         .map(|id| LolLobbyLobbyInvitationDto {
-            invitation_type: LolLobbyInvitationType::Lobby,
             to_summoner_id: *id,
-            // to_summoner_name: name.clone(),
             ..Default::default()
         })
         .collect();

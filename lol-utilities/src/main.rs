@@ -26,7 +26,7 @@ enum Message {
     CreateLobby,
     RandomizeTeams,
     Invite,
-    Checked(Summoner),
+    FriendToggled(Summoner),
 }
 
 impl Sandbox for App {
@@ -70,7 +70,7 @@ impl Sandbox for App {
                     .map(|(x, _)| x.id)
                     .collect::<Vec<_>>(),
             ),
-            Message::Checked(name) => {
+            Message::FriendToggled(name) => {
                 let value = self.friends.get_mut(&name).unwrap();
                 *value = !*value;
                 Ok(())
@@ -87,7 +87,7 @@ impl Sandbox for App {
                 .iter()
                 .fold(Column::new(), |column, (friend, checked)| {
                     column.push(checkbox(friend.name.clone(), *checked, |_| {
-                        Message::Checked(friend.clone())
+                        Message::FriendToggled(friend.clone())
                     }))
                 });
         let content = row![
@@ -100,7 +100,7 @@ impl Sandbox for App {
 
         container(content)
             .width(Length::Fill)
-            .width(Length::Fill)
+            .height(Length::Fill)
             .center_x()
             .center_y()
             .into()
