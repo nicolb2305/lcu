@@ -1,0 +1,16 @@
+[package]
+name = "client-api"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+base64 = "0.21.4"
+eyre = "0.6.8"
+itertools = "0.11.0"
+rand = "0.8.5"
+regex-lite = "0.1.0"
+reqwest = { version = "0.11.20", features = ["blocking", "json"] }
+serde = { version = "1.0.188", features = ["derive"] }
+sysinfo = "0.29.10"

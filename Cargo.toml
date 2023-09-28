@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "custom-game-randomizer",
+    "client-api",
+    "custom-game-creator",
+    "lol-utilities",
+]
+resolver = "2"
