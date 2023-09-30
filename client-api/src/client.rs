@@ -1,6 +1,6 @@
+use crate::{types::ApiError, Error};
 use base64::prelude::BASE64_STANDARD_NO_PAD;
 use base64::Engine;
-use eyre::{ContextCompat, Result, WrapErr};
 use regex_lite::Regex;
 use reqwest::{
     header::{HeaderMap, HeaderValue},
@@ -11,6 +11,7 @@ use sysinfo::{ProcessExt, System, SystemExt};
 
 type Port = u16;
 
+#[derive(Debug, Clone)]
 pub struct Client {
     port: Port,
     client: reqwest::blocking::Client,
@@ -21,7 +22,7 @@ impl Client {
     ///
     /// # Errors
     /// Fails if the client process is not running
-    pub fn new() -> Result<Self> {
+    pub fn new() -> Result<Self, Error> {
         let port_re = Regex::new(r"--app-port=([0-9]*)")?;
         let auth_token_re = Regex::new(r"--remoting-auth-token=([\w-]*)")?;
 
@@ -33,21 +34,21 @@ impl Client {
             .values()
             .find(|p| p.name() == "LeagueClientUx.exe")
             .map(|p| p.cmd().join(" "))
-            .context("Failed to find LCU process")?;
+            .ok_or(Error::ClientNotFound)?;
 
         let port = port_re
             .captures(&cmd_args)
             .and_then(|x| x.get(1))
             .map(|x| x.as_str().parse())
-            .context("Failed to parse port")??;
+            .ok_or(Error::PortNotFound)??;
         let auth_token = auth_token_re
             .captures(&cmd_args)
             .and_then(|x| x.get(1))
             .map(|x| x.as_str().to_owned())
-            .context("Failed to parse auth token")?;
+            .ok_or(Error::PortNotFound)?;
         let encoded_auth_token = BASE64_STANDARD_NO_PAD.encode(format!("riot:{auth_token}"));
 
-        let cert = Certificate::from_pem(include_bytes!("./riotgames.pem"))?;
+        let cert = Certificate::from_pem(include_bytes!("../riotgames.pem"))?;
         let mut headers = HeaderMap::new();
         headers.insert(
             "Authorization",
@@ -61,33 +62,36 @@ impl Client {
         Ok(Client { port, client })
     }
 
-    pub(crate) fn get<T: for<'a> Deserialize<'a>>(&self, endpoint: &str) -> Result<T> {
-        self.client
+    pub(crate) fn get<T: for<'a> Deserialize<'a>>(&self, endpoint: &str) -> Result<T, Error> {
+        let body = self
+            .client
             .get(format!("https://127.0.0.1:{}{endpoint}", self.port))
             .send()?
-            .json()
-            .wrap_err("Failed to deserialize response")
+            .bytes()?;
+        if let Ok(val) = serde_json::from_slice::<T>(&body) {
+            Ok(val)
+        } else {
+            let api_error = serde_json::from_slice::<ApiError>(&body)?;
+            Err(Error::ApiError(api_error))
+        }
     }
 
     pub(crate) fn post<T: for<'a> Deserialize<'a>, R: Serialize>(
         &self,
         endpoint: &str,
         body: &Option<R>,
-    ) -> Result<T> {
-        // let mut req_builder = self
-        //     .client
-        //     .post(format!("https://127.0.0.1:{}{endpoint}", self.port));
-        //
-        // if let Some(b) = body {
-        //     req_builder = req_builder.json(&b);
-        // }
-        //
-        // req_builder.send()?.json().into()
-        self.client
+    ) -> Result<T, Error> {
+        let body = self
+            .client
             .post(format!("https://127.0.0.1:{}{endpoint}", self.port))
             .json(&body)
             .send()?
-            .json()
-            .wrap_err("Failed to deserialize response")
+            .bytes()?;
+        if let Ok(val) = serde_json::from_slice::<T>(&body) {
+            Ok(val)
+        } else {
+            let api_error = serde_json::from_slice::<ApiError>(&body)?;
+            Err(Error::ApiError(api_error))
+        }
     }
 }

@@ -1,0 +1,21 @@
+{
+    "version": "0.1.0",
+    "tasks": {
+        "type": "shell",
+        "label": "cargo run",
+        "command": "cargo",
+        "args": [
+            "run",
+            "-p",
+            "lol-utilities"
+        ],
+        "problemMatcher": [
+            "$rustc"
+        ],
+        "options": {
+            "env": {
+                "RUST_LOG": "info"
+            }
+        }
+    }
+}

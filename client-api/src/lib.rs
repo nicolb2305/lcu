@@ -1,15 +1,44 @@
+use reqwest::header::InvalidHeaderValue;
+use std::num::ParseIntError;
+use types::ApiError;
+
 pub mod actions;
 pub mod client;
 pub mod endpoints;
 pub mod types;
 
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("Api request failed: {0}")]
+    Request(#[from] reqwest::Error),
+    #[error("Api returned error: {0}")]
+    ApiError(ApiError),
+    #[error("Deserialization of api response failed: {0}")]
+    ApiErrorDeserialization(#[from] serde_json::Error),
+    #[error("Regex construction failed: {0}")]
+    RegexContruction(#[from] regex_lite::Error),
+    #[error("Client could not be found")]
+    ClientNotFound,
+    #[error("Client port argument could not be found")]
+    PortNotFound,
+    #[error("Client auth argument could not be found")]
+    AuthNotFound,
+    #[error("Parsing of port number failed: {0}")]
+    PortParsing(#[from] ParseIntError),
+    #[error("Auth header construction failed: {0}")]
+    InvalidHeader(#[from] InvalidHeaderValue),
+    #[error("Team creation failed")]
+    TeamCreation,
+    #[error("Player is not in a lobby")]
+    LobbyNotFound,
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{actions::get_online_friends, client::Client};
-    use eyre::Result;
+    use crate::{actions::get_online_friends, client::Client, Error};
 
     #[test]
-    fn print_friends() -> Result<()> {
+    fn print_friends() -> Result<(), Error> {
         let client = Client::new()?;
         let friends = get_online_friends(&client)?;
         dbg!(friends);

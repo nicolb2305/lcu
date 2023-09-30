@@ -6,8 +6,8 @@ use crate::{
         LolLobbyLobbyInvitationDto, LolLobbyQueueCustomGameSpectatorPolicy,
         LolLobbyQueueGameTypeConfig,
     },
+    Error,
 };
-use eyre::{ContextCompat, Result};
 use itertools::Itertools;
 use rand::prelude::*;
 
@@ -16,7 +16,7 @@ use rand::prelude::*;
 ///
 /// # Errors
 /// Fails if the custom game chat cannot be found or the client api cannot be reached.
-pub fn randomize_teams(client: &Client) -> Result<()> {
+pub fn randomize_teams(client: &Client) -> Result<(), Error> {
     // Create teams
     let lobby = client.get_lol_lobby_v2_lobby()?;
     let mut players: Vec<&str> = lobby
@@ -29,7 +29,7 @@ pub fn randomize_teams(client: &Client) -> Result<()> {
         .chunks((players.len() / 2) + (players.len() % 2))
         .map(|x| x.join("\n"))
         .collect_tuple()
-        .context("Failed to create two teams")?;
+        .ok_or(Error::TeamCreation)?;
     let teams_output = format!(".\nTeam 1:\n{team1}\n----------\nTeam 2:\n{team2}");
 
     // Find custom game chat
@@ -38,7 +38,7 @@ pub fn randomize_teams(client: &Client) -> Result<()> {
     let custom_game_chat = conversations
         .iter()
         .find(|x| x.type_ == "customGame")
-        .context("Failed to find custom game chat")?;
+        .ok_or(Error::LobbyNotFound)?;
 
     // Post teams in chat
     let post_body = LolChatConversationMessageResource {
@@ -55,7 +55,7 @@ pub fn randomize_teams(client: &Client) -> Result<()> {
 ///
 /// # Errors
 /// Fails if client api cannot be reached.
-pub fn create_custom(client: &Client) -> Result<()> {
+pub fn create_custom(client: &Client) -> Result<(), Error> {
     let queue_config = LolLobbyQueueGameTypeConfig {
         // Tournament draft
         id: 6,
@@ -94,7 +94,12 @@ pub fn create_custom(client: &Client) -> Result<()> {
     Ok(())
 }
 
-pub fn get_online_friends(client: &Client) -> Result<Vec<LolChatFriendResource>> {
+/// Gets every summoner on the friends list logged into league of legends who are online
+/// or away.
+///
+/// # Errors
+/// Fails if client api cannot be reached.
+pub fn get_online_friends(client: &Client) -> Result<Vec<LolChatFriendResource>, Error> {
     Ok(client
         .get_lol_chat_v1_friends()?
         .into_iter()
@@ -105,7 +110,11 @@ pub fn get_online_friends(client: &Client) -> Result<Vec<LolChatFriendResource>>
         .collect())
 }
 
-pub fn invite_to_lobby(client: &Client, summoners: &[u64]) -> Result<()> {
+/// Invites summoners with given ids to the current lobby.
+///
+/// # Errors
+/// Fails if client api cannot be reached, or if player is not in a lobby.
+pub fn invite_to_lobby(client: &Client, summoners: &[u64]) -> Result<(), Error> {
     let body = summoners
         .iter()
         .map(|id| LolLobbyLobbyInvitationDto {

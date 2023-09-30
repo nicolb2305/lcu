@@ -3,5 +3,5 @@ use eyre::Result;
 
 fn main() -> Result<()> {
     let client = Client::new()?;
-    create_custom(&client)
+    Ok(create_custom(&client)?)
 }
