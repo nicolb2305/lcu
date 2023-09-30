@@ -63,17 +63,13 @@ impl Client {
     }
 
     pub(crate) fn get<T: for<'a> Deserialize<'a>>(&self, endpoint: &str) -> Result<T, Error> {
-        let body = self
-            .client
-            .get(format!("https://127.0.0.1:{}{endpoint}", self.port))
-            .send()?
-            .bytes()?;
-        if let Ok(val) = serde_json::from_slice::<T>(&body) {
-            Ok(val)
-        } else {
-            let api_error = serde_json::from_slice::<ApiError>(&body)?;
-            Err(Error::ApiError(api_error))
-        }
+        deserialize_response(
+            &self
+                .client
+                .get(format!("https://127.0.0.1:{}{endpoint}", self.port))
+                .send()?
+                .bytes()?,
+        )
     }
 
     pub(crate) fn post<T: for<'a> Deserialize<'a>, R: Serialize>(
@@ -81,17 +77,22 @@ impl Client {
         endpoint: &str,
         body: &Option<R>,
     ) -> Result<T, Error> {
-        let body = self
-            .client
-            .post(format!("https://127.0.0.1:{}{endpoint}", self.port))
-            .json(&body)
-            .send()?
-            .bytes()?;
-        if let Ok(val) = serde_json::from_slice::<T>(&body) {
-            Ok(val)
-        } else {
-            let api_error = serde_json::from_slice::<ApiError>(&body)?;
-            Err(Error::ApiError(api_error))
-        }
+        deserialize_response(
+            &self
+                .client
+                .post(format!("https://127.0.0.1:{}{endpoint}", self.port))
+                .json(&body)
+                .send()?
+                .bytes()?,
+        )
+    }
+}
+
+fn deserialize_response<T: for<'a> Deserialize<'a>>(body: &[u8]) -> Result<T, Error> {
+    if let Ok(val) = serde_json::from_slice::<T>(body) {
+        Ok(val)
+    } else {
+        let api_error = serde_json::from_slice::<ApiError>(body)?;
+        Err(Error::ApiError(api_error))
     }
 }

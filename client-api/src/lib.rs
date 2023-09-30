@@ -1,5 +1,6 @@
 use reqwest::header::InvalidHeaderValue;
 use std::num::ParseIntError;
+use thiserror::Error;
 use types::ApiError;
 
 pub mod actions;
@@ -7,7 +8,7 @@ pub mod client;
 pub mod endpoints;
 pub mod types;
 
-#[derive(thiserror::Error, Debug)]
+#[derive(Error, Debug)]
 pub enum Error {
     #[error("Api request failed: {0}")]
     Request(#[from] reqwest::Error),
