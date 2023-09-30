@@ -1,3 +1,4 @@
+#![windows_subsystem = "windows"]
 use client_api::actions::{get_online_friends, invite_to_lobby, randomize_teams};
 use client_api::Error;
 use client_api::{actions::create_custom, client::Client};
