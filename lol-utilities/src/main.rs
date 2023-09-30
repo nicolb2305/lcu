@@ -1,4 +1,5 @@
 use client_api::actions::{get_online_friends, invite_to_lobby, randomize_teams};
+use client_api::Error;
 use client_api::{actions::create_custom, client::Client};
 use eyre::Result;
 use iced::widget::{button, checkbox, column, container, row, text, Column};
@@ -95,6 +96,10 @@ impl Application for App {
             Message::CreateLobby => {
                 if let Err(e) = create_custom(&self.inner.as_mut().unwrap().api_client) {
                     log::error!("Failed to create custom game lobby: {e}");
+                    if matches!(e, Error::Request(_)) {
+                        self.inner = None;
+                        log::info!("Disconnecting from client");
+                    }
                 } else {
                     log::info!("Created lobby");
                 }
@@ -103,6 +108,10 @@ impl Application for App {
             Message::RandomizeTeams => {
                 if let Err(e) = randomize_teams(&self.inner.as_mut().unwrap().api_client) {
                     log::error!("Failed to randomize teams: {e}");
+                    if matches!(e, Error::Request(_)) {
+                        self.inner = None;
+                        log::info!("Disconnecting from client");
+                    }
                 } else {
                     log::info!("Randomized teams");
                 }
@@ -120,6 +129,10 @@ impl Application for App {
                         .collect::<Vec<_>>(),
                 ) {
                     log::error!("Failed to invite players to lobby: {e}");
+                    if matches!(e, Error::Request(_)) {
+                        self.inner = None;
+                        log::info!("Disconnecting from client");
+                    }
                 } else {
                     log::info!("Invited players");
                 }
@@ -160,6 +173,10 @@ impl Application for App {
                     }
                     Err(e) => {
                         log::error!("Failed to update friends list: {e}");
+                        if matches!(e, Error::Request(_)) {
+                            self.inner = None;
+                            log::info!("Disconnecting from client");
+                        }
                     }
                 }
                 Command::none()
@@ -213,7 +230,7 @@ impl Application for App {
     }
 }
 
-fn get_friends(api_client: &Client) -> Result<BTreeMap<Summoner, bool>> {
+fn get_friends(api_client: &Client) -> Result<BTreeMap<Summoner, bool>, Error> {
     Ok(get_online_friends(api_client)?
         .into_iter()
         .map(|x| {
@@ -229,7 +246,7 @@ fn get_friends(api_client: &Client) -> Result<BTreeMap<Summoner, bool>> {
 }
 
 #[allow(clippy::unused_async)]
-async fn create_inner_app() -> Result<InnerApp> {
+async fn create_inner_app() -> Result<InnerApp, Error> {
     let api_client = Client::new()?;
     let friends = get_friends(&api_client)?;
 
