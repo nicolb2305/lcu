@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::{types::ApiError, Error};
 use base64::prelude::BASE64_STANDARD_NO_PAD;
 use base64::Engine;
@@ -55,6 +57,8 @@ impl Client {
             HeaderValue::from_str(format!("Basic {encoded_auth_token}").as_str())?,
         );
         let client = reqwest::blocking::ClientBuilder::new()
+            // Fast detection of client being closed
+            .connect_timeout(Duration::new(0, 100_000_000))
             .add_root_certificate(cert)
             .default_headers(headers)
             .build()?;
