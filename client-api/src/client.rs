@@ -93,7 +93,7 @@ impl Client {
 }
 
 fn deserialize_response<T: for<'a> Deserialize<'a>>(body: &[u8]) -> Result<T, Error> {
-    if let Ok(val) = serde_json::from_slice::<T>(body) {
+    if let Ok(val) = serde_json::from_slice(body) {
         Ok(val)
     } else {
         let api_error = serde_json::from_slice::<ApiError>(body)?;

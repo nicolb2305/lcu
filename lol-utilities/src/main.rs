@@ -1,13 +1,20 @@
 #![windows_subsystem = "windows"]
-use client_api::actions::{get_online_friends, invite_to_lobby, randomize_teams};
-use client_api::Error;
-use client_api::{actions::create_custom, client::Client};
+use crate::{
+    theme::Theme,
+    widget::{Button, Checkbox, Column, Container, Element, Row, Text},
+};
+use client_api::{
+    actions::{create_custom, get_online_friends, invite_to_lobby, randomize_teams},
+    client::Client,
+    Error,
+};
 use eyre::Result;
-use iced::widget::{button, checkbox, column, container, row, text, Column};
-use iced::window::icon;
-use iced::{executor, Application, Command, Element, Length, Settings, Theme};
+use iced::{executor, window::icon, Application, Command, Length, Settings};
 use image::ImageFormat;
 use std::collections::BTreeMap;
+
+mod theme;
+mod widget;
 
 const SPACING: u16 = 22;
 
@@ -64,24 +71,6 @@ impl Application for App {
     type Flags = ();
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
-        // let api_client = Client::new().expect("Failed to create client");
-        // let friends: HashMap<_, _> = get_online_friends(&api_client)
-        //     .expect("Failed to find friends")
-        //     .into_iter()
-        //     .map(|x| {
-        //         (
-        //             Summoner {
-        //                 name: x.name,
-        //                 id: x.summoner_id,
-        //             },
-        //             true,
-        //         )
-        //     })
-        //     .collect();
-        // App {
-        //     api_client,
-        //     friends,
-        // }
         (
             App { inner: None },
             Command::perform(create_inner_app(), |inner| Message::Connect(inner.ok())),
@@ -95,7 +84,7 @@ impl Application for App {
     fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
             Message::CreateLobby => {
-                if let Err(e) = create_custom(&self.inner.as_mut().unwrap().api_client) {
+                if let Err(e) = create_custom(&self.inner.as_ref().unwrap().api_client) {
                     log::error!("Failed to create custom game lobby: {e}");
                     if matches!(e, Error::Request(_)) {
                         self.inner = None;
@@ -107,7 +96,7 @@ impl Application for App {
                 Command::none()
             }
             Message::RandomizeTeams => {
-                if let Err(e) = randomize_teams(&self.inner.as_mut().unwrap().api_client) {
+                if let Err(e) = randomize_teams(&self.inner.as_ref().unwrap().api_client) {
                     log::error!("Failed to randomize teams: {e}");
                     if matches!(e, Error::Request(_)) {
                         self.inner = None;
@@ -119,7 +108,7 @@ impl Application for App {
                 Command::none()
             }
             Message::Invite => {
-                let inner = self.inner.as_mut().unwrap();
+                let inner = self.inner.as_ref().unwrap();
                 if let Err(e) = invite_to_lobby(
                     &inner.api_client,
                     &inner
@@ -186,48 +175,66 @@ impl Application for App {
     }
 
     fn view(&self) -> Element<'_, Self::Message> {
-        let content: Element<'_, _, _> = match self.inner.as_ref() {
+        #[allow(clippy::single_match_else)]
+        let content: Element<'_, _> = match self.inner.as_ref() {
             Some(inner) => {
+                let create_lobby_button =
+                    Button::new("Create lobby!").on_press(Message::CreateLobby);
+
+                let update_friends_list_button =
+                    Button::new("Update friends list").on_press(Message::UpdateFriends);
+
                 let checkmarks_column = inner
                     .friends
                     .iter()
                     .fold(Column::new(), |column, (friend, checked)| {
-                        column.push(checkbox(friend.name.clone(), *checked, |_| {
+                        column.push(Checkbox::new(friend.name.clone(), *checked, |_| {
                             Message::FriendToggled(friend.clone())
                         }))
                     })
                     .spacing(6);
-                row![
-                    button("Create lobby!").on_press(Message::CreateLobby),
-                    column![
-                        checkmarks_column,
-                        button("Update friends list").on_press(Message::UpdateFriends),
-                    ]
-                    .spacing(SPACING),
-                    button("Invite!").on_press(Message::Invite),
-                    button("Randomize teams!").on_press(Message::RandomizeTeams),
-                ]
+
+                let friends_list_column = Column::with_children(vec![
+                    checkmarks_column.into(),
+                    update_friends_list_button.into(),
+                ])
+                .spacing(SPACING);
+
+                let invite_button = Button::new("Invite!").on_press(Message::Invite);
+
+                let randomize_teams_button =
+                    Button::new("Randomize teams!").on_press(Message::RandomizeTeams);
+
+                Row::with_children(vec![
+                    create_lobby_button.into(),
+                    friends_list_column.into(),
+                    invite_button.into(),
+                    randomize_teams_button.into(),
+                ])
                 .spacing(SPACING)
                 .into()
             }
-            None => column![
-                text("Client not found"),
-                button("Connect to client").on_press(Message::AttemptConnection),
-            ]
-            .spacing(SPACING)
-            .into(),
+            None => {
+                let client_not_found_text = Text::new("Client not found");
+
+                let connect_to_client_button =
+                    Button::new("Connect to client").on_press(Message::AttemptConnection);
+
+                Column::with_children(vec![
+                    client_not_found_text.into(),
+                    connect_to_client_button.into(),
+                ])
+                .spacing(SPACING)
+                .into()
+            }
         };
 
-        container(content)
+        Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
             .center_x()
             // .center_y()
             .into()
-    }
-
-    fn theme(&self) -> Self::Theme {
-        Theme::Dark
     }
 }
 
