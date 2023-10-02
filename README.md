@@ -1,1 +1,1 @@
-Multiple small League of Legends client (VCU) programs.
+Multiple small League of Legends client (LCU) programs.
