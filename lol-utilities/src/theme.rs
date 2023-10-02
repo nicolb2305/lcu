@@ -50,9 +50,8 @@ impl container::StyleSheet for Theme {
         match style {
             Container::Default => container::Appearance::default(),
             Container::Bordered => container::Appearance {
-                border_color: color!(0xB5, 0x8B, 0x33),
+                border_color: color!(0x78, 0x5A, 0x28),
                 border_width: 1.0,
-                // border_radius: 4.0,
                 ..Default::default()
             },
         }
@@ -66,7 +65,6 @@ impl button::StyleSheet for Theme {
         match style {
             Button::Primary => button::Appearance {
                 background: Some(color!(0x0F, 0x18, 0x1E).into()),
-                // border_radius: 4.0,
                 border_width: 1.0,
                 border_color: color!(0xB5, 0x8B, 0x33),
                 ..Default::default()

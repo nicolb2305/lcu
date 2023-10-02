@@ -230,6 +230,7 @@ impl Application for App {
         };
 
         Container::new(content)
+            .style(theme::Container::Bordered)
             .width(Length::Fill)
             .height(Length::Fill)
             .center_x()
