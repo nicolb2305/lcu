@@ -53,20 +53,30 @@ pub async fn randomize_teams(client: &Client) -> Result<(), Error> {
     Ok(())
 }
 
+pub enum DraftType {
+    BlindPick = 1,
+    Draft = 2,
+    AllRandom = 4,
+    TorunamentDraft = 6,
+}
+
+pub enum Map {
+    SummonersRift = 11,
+    HowlingAbyss = 12,
+}
+
 /// Creates a custom game with tournament draft on Summoner's Rift.
 ///
 /// # Errors
 /// Fails if client api cannot be reached.
-pub async fn create_custom(client: &Client) -> Result<(), Error> {
+pub async fn create_custom(client: &Client, draft_type: DraftType, map: Map) -> Result<(), Error> {
     let queue_config = LolLobbyQueueGameTypeConfig {
-        // Tournament draft
-        id: 6,
+        id: draft_type as i64,
         ..Default::default()
     };
 
     let config = LolLobbyLobbyCustomGameConfiguration {
-        // Summoner's Rift
-        map_id: 11,
+        map_id: map as i32,
         game_mode: "CLASSIC".to_string(),
         mutators: queue_config.clone(),
         game_type_config: queue_config,

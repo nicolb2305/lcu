@@ -4,7 +4,9 @@ use crate::{
     widget::{Button, Checkbox, Column, Container, Element, Row, Text},
 };
 use client_api::{
-    actions::{create_custom, get_online_friends, invite_to_lobby, randomize_teams},
+    actions::{
+        create_custom, get_online_friends, invite_to_lobby, randomize_teams, DraftType, Map,
+    },
     client::Client,
     Error,
 };
@@ -55,7 +57,8 @@ struct InnerApp {
 
 #[derive(Debug, Clone)]
 enum Message {
-    CreateLobby,
+    CreateTournamentDraftLobby,
+    CreateBlindPickLobby,
     RandomizeTeams,
     Invite,
     AttemptConnection,
@@ -86,10 +89,19 @@ impl Application for App {
 
     fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
-            Message::CreateLobby => {
+            Message::CreateTournamentDraftLobby => {
                 let client = self.inner.as_ref().unwrap().api_client.clone();
                 Command::perform(
-                    async move { create_custom(&client).await },
+                    async move {
+                        create_custom(&client, DraftType::TorunamentDraft, Map::SummonersRift).await
+                    },
+                    check_api_response("Created lobby", "Failed to create lobby"),
+                )
+            }
+            Message::CreateBlindPickLobby => {
+                let client = self.inner.as_ref().unwrap().api_client.clone();
+                Command::perform(
+                    async move { create_custom(&client, DraftType::BlindPick, Map::HowlingAbyss).await },
                     check_api_response("Created lobby", "Failed to create lobby"),
                 )
             }
@@ -179,7 +191,16 @@ impl Application for App {
         let content: Element<'_, _> = match self.inner.as_ref() {
             Some(inner) => {
                 let create_lobby_button =
-                    Button::new("Create lobby!").on_press(Message::CreateLobby);
+                    Button::new("Create lobby!").on_press(Message::CreateTournamentDraftLobby);
+
+                let create_aram_lobby_button =
+                    Button::new("Create ARAM lobby!").on_press(Message::CreateBlindPickLobby);
+
+                let create_lobby_column = Column::with_children(vec![
+                    create_lobby_button.into(),
+                    create_aram_lobby_button.into(),
+                ])
+                .spacing(6);
 
                 let update_friends_list_button =
                     Button::new("Update friends list").on_press(Message::UpdateFriends);
@@ -206,7 +227,7 @@ impl Application for App {
                     Button::new("Randomize teams!").on_press(Message::RandomizeTeams);
 
                 Row::with_children(vec![
-                    create_lobby_button.into(),
+                    create_lobby_column.into(),
                     friends_list_column.into(),
                     invite_button.into(),
                     randomize_teams_button.into(),
