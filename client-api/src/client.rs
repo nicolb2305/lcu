@@ -16,7 +16,7 @@ type Port = u16;
 #[derive(Debug, Clone)]
 pub struct Client {
     port: Port,
-    client: reqwest::blocking::Client,
+    client: reqwest::Client,
 }
 
 impl Client {
@@ -56,7 +56,7 @@ impl Client {
             "Authorization",
             HeaderValue::from_str(format!("Basic {encoded_auth_token}").as_str())?,
         );
-        let client = reqwest::blocking::ClientBuilder::new()
+        let client = reqwest::ClientBuilder::new()
             // Fast detection of client being closed
             .connect_timeout(Duration::new(0, 100_000_000))
             .add_root_certificate(cert)
@@ -66,17 +66,19 @@ impl Client {
         Ok(Client { port, client })
     }
 
-    pub(crate) fn get<T: for<'a> Deserialize<'a>>(&self, endpoint: &str) -> Result<T, Error> {
+    pub(crate) async fn get<T: for<'a> Deserialize<'a>>(&self, endpoint: &str) -> Result<T, Error> {
         deserialize_response(
             &self
                 .client
                 .get(format!("https://127.0.0.1:{}{endpoint}", self.port))
-                .send()?
-                .bytes()?,
+                .send()
+                .await?
+                .bytes()
+                .await?,
         )
     }
 
-    pub(crate) fn post<T: for<'a> Deserialize<'a>, R: Serialize>(
+    pub(crate) async fn post<T: for<'a> Deserialize<'a>, R: Serialize>(
         &self,
         endpoint: &str,
         body: &Option<R>,
@@ -86,8 +88,10 @@ impl Client {
                 .client
                 .post(format!("https://127.0.0.1:{}{endpoint}", self.port))
                 .json(&body)
-                .send()?
-                .bytes()?,
+                .send()
+                .await?
+                .bytes()
+                .await?,
         )
     }
 }

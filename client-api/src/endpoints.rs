@@ -8,17 +8,17 @@ use crate::{
 };
 
 impl Client {
-    pub(crate) fn get_lol_lobby_v2_lobby(&self) -> Result<LolLobbyLobbyDto, Error> {
-        self.get("/lol-lobby/v2/lobby")
+    pub(crate) async fn get_lol_lobby_v2_lobby(&self) -> Result<LolLobbyLobbyDto, Error> {
+        self.get("/lol-lobby/v2/lobby").await
     }
 
-    pub(crate) fn get_lol_chat_v1_conversations(
+    pub(crate) async fn get_lol_chat_v1_conversations(
         &self,
     ) -> Result<Vec<LolChatConversationResource>, Error> {
-        self.get("/lol-chat/v1/conversations")
+        self.get("/lol-chat/v1/conversations").await
     }
 
-    pub(crate) fn post_lol_chat_v1_conversations_by_id_messages(
+    pub(crate) async fn post_lol_chat_v1_conversations_by_id_messages(
         &self,
         id: &str,
         body: LolChatConversationMessageResource,
@@ -27,23 +27,27 @@ impl Client {
             &format!("/lol-chat/v1/conversations/{id}/messages"),
             &Some(body),
         )
+        .await
     }
 
-    pub(crate) fn post_lol_lobby_v2_lobby(
+    pub(crate) async fn post_lol_lobby_v2_lobby(
         &self,
         body: LolLobbyLobbyChangeGameDto,
     ) -> Result<LolLobbyLobbyDto, Error> {
-        self.post("/lol-lobby/v2/lobby", &Some(body))
+        self.post("/lol-lobby/v2/lobby", &Some(body)).await
     }
 
-    pub(crate) fn get_lol_chat_v1_friends(&self) -> Result<Vec<LolChatFriendResource>, Error> {
-        self.get("/lol-chat/v1/friends")
+    pub(crate) async fn get_lol_chat_v1_friends(
+        &self,
+    ) -> Result<Vec<LolChatFriendResource>, Error> {
+        self.get("/lol-chat/v1/friends").await
     }
 
-    pub(crate) fn post_lol_lobby_v2_lobby_invitations(
+    pub(crate) async fn post_lol_lobby_v2_lobby_invitations(
         &self,
         body: Vec<LolLobbyLobbyInvitationDto>,
     ) -> Result<Vec<LolLobbyLobbyInvitationDto>, Error> {
         self.post("/lol-lobby/v2/lobby/invitations", &Some(body))
+            .await
     }
 }

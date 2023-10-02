@@ -11,7 +11,7 @@ use client_api::{
 use eyre::Result;
 use iced::{executor, window::icon, Application, Command, Length, Settings};
 use image::ImageFormat;
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::Arc};
 
 mod theme;
 mod widget;
@@ -49,7 +49,7 @@ struct App {
 
 #[derive(Debug, Clone)]
 struct InnerApp {
-    api_client: Client,
+    api_client: Arc<Client>,
     friends: BTreeMap<Summoner, bool>,
 }
 
@@ -58,10 +58,13 @@ enum Message {
     CreateLobby,
     RandomizeTeams,
     Invite,
-    FriendToggled(Summoner),
-    Connect(Option<InnerApp>),
     AttemptConnection,
+    Connect(Option<InnerApp>),
+    Disconnect,
+    FriendToggled(Summoner),
     UpdateFriends,
+    UpdatedFriends(BTreeMap<Summoner, bool>),
+    Nothing,
 }
 
 impl Application for App {
@@ -84,49 +87,53 @@ impl Application for App {
     fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
             Message::CreateLobby => {
-                if let Err(e) = create_custom(&self.inner.as_ref().unwrap().api_client) {
-                    log::error!("Failed to create custom game lobby: {e}");
-                    if matches!(e, Error::Request(_)) {
-                        self.inner = None;
-                        log::info!("Disconnecting from client");
-                    }
-                } else {
-                    log::info!("Created lobby");
-                }
-                Command::none()
+                let client = self.inner.as_ref().unwrap().api_client.clone();
+                Command::perform(
+                    async move { create_custom(&client).await },
+                    check_api_response("Created lobby", "Failed to create lobby"),
+                )
             }
             Message::RandomizeTeams => {
-                if let Err(e) = randomize_teams(&self.inner.as_ref().unwrap().api_client) {
-                    log::error!("Failed to randomize teams: {e}");
-                    if matches!(e, Error::Request(_)) {
-                        self.inner = None;
-                        log::info!("Disconnecting from client");
-                    }
-                } else {
-                    log::info!("Randomized teams");
-                }
-                Command::none()
+                let client = self.inner.as_ref().unwrap().api_client.clone();
+                Command::perform(
+                    async move { randomize_teams(&client).await },
+                    check_api_response("Randomized teams", "Failed to randomize teams"),
+                )
             }
             Message::Invite => {
-                let inner = self.inner.as_ref().unwrap();
-                if let Err(e) = invite_to_lobby(
-                    &inner.api_client,
-                    &inner
-                        .friends
-                        .iter()
-                        .filter(|(_, &x)| x)
-                        .map(|(x, _)| x.id)
-                        .collect::<Vec<_>>(),
-                ) {
-                    log::error!("Failed to invite players to lobby: {e}");
-                    if matches!(e, Error::Request(_)) {
-                        self.inner = None;
-                        log::info!("Disconnecting from client");
-                    }
-                } else {
-                    log::info!("Invited players");
-                }
-                Command::none()
+                let client = self.inner.as_ref().unwrap().api_client.clone();
+                let friends = self
+                    .inner
+                    .as_ref()
+                    .unwrap()
+                    .friends
+                    .iter()
+                    .filter_map(|(summ, check)| if *check { Some(summ.id) } else { None })
+                    .collect::<Vec<_>>();
+                Command::perform(
+                    async move { invite_to_lobby(&client, &friends).await },
+                    check_api_response("Invited friends", "Failed to invite friends"),
+                )
+            }
+            Message::UpdateFriends => {
+                let client = self.inner.as_ref().unwrap().api_client.clone();
+                Command::perform(
+                    async move { get_friends(&client).await },
+                    move |resp| match resp {
+                        Ok(friends) => {
+                            log::info!("Updated friends list");
+                            Message::UpdatedFriends(friends)
+                        }
+                        Err(e) => {
+                            log::error!("Failed to update friends list: {e}");
+                            if matches!(e, Error::Request(_)) {
+                                Message::Disconnect
+                            } else {
+                                Message::Nothing
+                            }
+                        }
+                    },
+                )
             }
             Message::FriendToggled(summoner) => {
                 if let Some(value) = self.inner.as_mut().unwrap().friends.get_mut(&summoner) {
@@ -154,21 +161,14 @@ impl Application for App {
                 log::info!("Attempting to connect to client");
                 Command::perform(create_inner_app(), |inner| Message::Connect(inner.ok()))
             }
-            Message::UpdateFriends => {
-                let inner = self.inner.as_mut().unwrap();
-                match get_friends(&inner.api_client) {
-                    Ok(friends) => {
-                        inner.friends = friends;
-                        log::info!("Updated friends list");
-                    }
-                    Err(e) => {
-                        log::error!("Failed to update friends list: {e}");
-                        if matches!(e, Error::Request(_)) {
-                            self.inner = None;
-                            log::info!("Disconnecting from client");
-                        }
-                    }
-                }
+            Message::Nothing => Command::none(),
+            Message::Disconnect => {
+                log::info!("Disconnecting from client");
+                self.inner = None;
+                Command::none()
+            }
+            Message::UpdatedFriends(friends) => {
+                self.inner.as_mut().unwrap().friends = friends;
                 Command::none()
             }
         }
@@ -195,8 +195,8 @@ impl Application for App {
                     .spacing(6);
 
                 let friends_list_column = Column::with_children(vec![
-                    checkmarks_column.into(),
                     update_friends_list_button.into(),
+                    checkmarks_column.into(),
                 ])
                 .spacing(SPACING);
 
@@ -233,13 +233,33 @@ impl Application for App {
             .width(Length::Fill)
             .height(Length::Fill)
             .center_x()
-            // .center_y()
+            .center_y()
             .into()
     }
 }
 
-fn get_friends(api_client: &Client) -> Result<BTreeMap<Summoner, bool>, Error> {
-    Ok(get_online_friends(api_client)?
+fn check_api_response(
+    ok_msg: &'static str,
+    err_msg: &'static str,
+) -> impl FnOnce(Result<(), Error>) -> Message {
+    move |resp| {
+        if let Err(e) = resp {
+            log::error!("{err_msg} ({e})");
+            if matches!(e, Error::Request(_)) {
+                Message::Disconnect
+            } else {
+                Message::Nothing
+            }
+        } else {
+            log::info!("{ok_msg}");
+            Message::Nothing
+        }
+    }
+}
+
+async fn get_friends(api_client: &Client) -> Result<BTreeMap<Summoner, bool>, Error> {
+    Ok(get_online_friends(api_client)
+        .await?
         .into_iter()
         .map(|x| {
             (
@@ -253,10 +273,9 @@ fn get_friends(api_client: &Client) -> Result<BTreeMap<Summoner, bool>, Error> {
         .collect())
 }
 
-#[allow(clippy::unused_async)]
 async fn create_inner_app() -> Result<InnerApp, Error> {
-    let api_client = Client::new()?;
-    let friends = get_friends(&api_client)?;
+    let api_client = Arc::new(Client::new()?);
+    let friends = get_friends(&api_client).await?;
 
     Ok(InnerApp {
         api_client,

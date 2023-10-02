@@ -33,16 +33,3 @@ pub enum Error {
     #[error("Player is not in a lobby")]
     LobbyNotFound,
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::{actions::get_online_friends, client::Client, Error};
-
-    #[test]
-    fn print_friends() -> Result<(), Error> {
-        let client = Client::new()?;
-        let friends = get_online_friends(&client)?;
-        dbg!(friends);
-        Ok(())
-    }
-}
