@@ -66,11 +66,21 @@ impl Client {
         Ok(Client { port, client })
     }
 
-    pub(crate) async fn get<T: for<'a> Deserialize<'a>>(&self, endpoint: &str) -> Result<T, Error> {
+    pub(crate) async fn get<T: for<'a> Deserialize<'a>, U: Serialize + ?Sized>(
+        &self,
+        endpoint: &str,
+        query: &U,
+    ) -> Result<T, Error> {
+        // let temp = self
+        //     .client
+        //     .get(format!("https://127.0.0.1:{}{endpoint}", self.port))
+        //     .query(query);
+        // dbg!(&temp);
         deserialize_response(
             &self
                 .client
                 .get(format!("https://127.0.0.1:{}{endpoint}", self.port))
+                .query(query)
                 .send()
                 .await?
                 .bytes()
@@ -97,10 +107,12 @@ impl Client {
 }
 
 fn deserialize_response<T: for<'a> Deserialize<'a>>(body: &[u8]) -> Result<T, Error> {
-    if let Ok(val) = serde_json::from_slice(body) {
-        Ok(val)
-    } else {
-        let api_error = serde_json::from_slice::<ApiError>(body)?;
-        Err(Error::ApiError(api_error))
+    match serde_json::from_slice(body) {
+        Ok(val) => Ok(val),
+        Err(e) => {
+            log::error!("Failed to deserialize response: {e}");
+            let api_error = serde_json::from_slice::<ApiError>(body)?;
+            Err(Error::ApiError(api_error))
+        }
     }
 }

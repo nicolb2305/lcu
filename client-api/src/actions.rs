@@ -8,6 +8,7 @@ use crate::{
     },
     Error,
 };
+use futures::future::try_join_all;
 use itertools::Itertools;
 use rand::prelude::*;
 
@@ -136,5 +137,47 @@ pub async fn invite_to_lobby(client: &Client, summoners: &[u64]) -> Result<(), E
         })
         .collect();
     client.post_lol_lobby_v2_lobby_invitations(body).await?;
+    Ok(())
+}
+
+/// Fetches the last 200 games from the player's match history and sends any custom
+/// games with 10 participants to the pasanapi.
+///
+/// # Errors
+/// Fails if the client api cannot be reached, or if the pasanapi cannot be reached.
+pub async fn post_custom_games_to_pasanapi(client: &Client) -> Result<(), Error> {
+    let req_client = reqwest::Client::new();
+
+    let match_history = client
+        .get_lol_match_history_v1_products_lol_current_summoner_matches(None, Some(200))
+        .await?
+        .games
+        .games;
+
+    let match_history = match_history
+        .into_iter()
+        .filter(|x| x.map_id == 11 && x.game_type == "CUSTOM_GAME" && x.game_mode == "CLASSIC")
+        .map(|x| client.get_lol_match_history_v1_games_by_game_id(x.game_id));
+
+    let post_responses = try_join_all(match_history)
+        .await?
+        .into_iter()
+        .filter(|x| x.participants.len() == 10)
+        .map(|x| {
+            req_client
+                .post("https://api.påsan.com/match")
+                .json(&x)
+                .send()
+        });
+
+    let responses = try_join_all(post_responses).await?;
+
+    let num_inserted = responses
+        .into_iter()
+        .filter(|x| x.status().is_success())
+        .count();
+
+    log::info!("Successfully sent {num_inserted} custom games");
+
     Ok(())
 }

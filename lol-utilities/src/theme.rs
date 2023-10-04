@@ -71,6 +71,9 @@ impl button::StyleSheet for Theme {
             },
             Button::Secondary => button::Appearance {
                 background: Some(color!(0x0F, 0x18, 0x1E).into()),
+                border_width: 1.0,
+                border_color: color!(0xB5, 0x8B, 0x33),
+                text_color: color!(0xA0, 0x9B, 0x8C),
                 ..Default::default()
             },
         }

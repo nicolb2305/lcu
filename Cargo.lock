@@ -292,7 +292,9 @@ name = "client-api"
 version = "0.1.0"
 dependencies = [
  "base64",
+ "futures",
  "itertools",
+ "log",
  "rand",
  "regex-lite",
  "reqwest",
@@ -1537,7 +1539,7 @@ dependencies = [
 
 [[package]]
 name = "lol-utilities"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "client-api",
  "env_logger",

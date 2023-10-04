@@ -5,7 +5,8 @@ use crate::{
 };
 use client_api::{
     actions::{
-        create_custom, get_online_friends, invite_to_lobby, randomize_teams, DraftType, Map,
+        create_custom, get_online_friends, invite_to_lobby, post_custom_games_to_pasanapi,
+        randomize_teams, DraftType, Map,
     },
     client::Client,
     Error,
@@ -21,11 +22,11 @@ mod widget;
 const SPACING: u16 = 22;
 
 fn main() -> Result<()> {
-    // $env:RUST_LOG = "lol_utilities"
+    // $env:RUST_LOG = "lol_utilities,client_api"
     env_logger::init();
     App::run(Settings {
         window: iced::window::Settings {
-            size: (600, 300),
+            size: (800, 300),
             resizable: true,
             decorations: true,
             icon: Some(icon::from_file_data(
@@ -53,6 +54,7 @@ struct App {
 struct InnerApp {
     api_client: Arc<Client>,
     friends: BTreeMap<Summoner, bool>,
+    sending_games: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -61,6 +63,8 @@ enum Message {
     CreateBlindPickLobby,
     RandomizeTeams,
     Invite,
+    SendMatchHistory,
+    DoneSendingMatchHistory,
     AttemptConnection,
     Connect(Option<InnerApp>),
     Disconnect,
@@ -87,6 +91,7 @@ impl Application for App {
         String::from("League of Legends Utilities")
     }
 
+    #[allow(clippy::too_many_lines)]
     fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
             Message::CreateTournamentDraftLobby => {
@@ -95,21 +100,25 @@ impl Application for App {
                     async move {
                         create_custom(&client, DraftType::TorunamentDraft, Map::SummonersRift).await
                     },
-                    check_api_response("Created lobby", "Failed to create lobby"),
+                    check_api_response("Created lobby", "Failed to create lobby", Message::Nothing),
                 )
             }
             Message::CreateBlindPickLobby => {
                 let client = self.inner.as_ref().unwrap().api_client.clone();
                 Command::perform(
                     async move { create_custom(&client, DraftType::BlindPick, Map::HowlingAbyss).await },
-                    check_api_response("Created lobby", "Failed to create lobby"),
+                    check_api_response("Created lobby", "Failed to create lobby", Message::Nothing),
                 )
             }
             Message::RandomizeTeams => {
                 let client = self.inner.as_ref().unwrap().api_client.clone();
                 Command::perform(
                     async move { randomize_teams(&client).await },
-                    check_api_response("Randomized teams", "Failed to randomize teams"),
+                    check_api_response(
+                        "Randomized teams",
+                        "Failed to randomize teams",
+                        Message::Nothing,
+                    ),
                 )
             }
             Message::Invite => {
@@ -124,8 +133,28 @@ impl Application for App {
                     .collect::<Vec<_>>();
                 Command::perform(
                     async move { invite_to_lobby(&client, &friends).await },
-                    check_api_response("Invited friends", "Failed to invite friends"),
+                    check_api_response(
+                        "Invited friends",
+                        "Failed to invite friends",
+                        Message::Nothing,
+                    ),
                 )
+            }
+            Message::SendMatchHistory => {
+                self.inner.as_mut().unwrap().sending_games = true;
+                let client = self.inner.as_ref().unwrap().api_client.clone();
+                Command::perform(
+                    async move { post_custom_games_to_pasanapi(&client).await },
+                    check_api_response(
+                        "Sent custom games",
+                        "Failed to send custom games",
+                        Message::DoneSendingMatchHistory,
+                    ),
+                )
+            }
+            Message::DoneSendingMatchHistory => {
+                self.inner.as_mut().unwrap().sending_games = false;
+                Command::none()
             }
             Message::UpdateFriends => {
                 let client = self.inner.as_ref().unwrap().api_client.clone();
@@ -226,11 +255,20 @@ impl Application for App {
                 let randomize_teams_button =
                     Button::new("Randomize teams!").on_press(Message::RandomizeTeams);
 
+                let send_match_history_button = if inner.sending_games {
+                    Button::new("Sending...")
+                        .style(theme::Button::Secondary)
+                        .on_press(Message::Nothing)
+                } else {
+                    Button::new("Send match history!").on_press(Message::SendMatchHistory)
+                };
+
                 Row::with_children(vec![
                     create_lobby_column.into(),
                     friends_list_column.into(),
                     invite_button.into(),
                     randomize_teams_button.into(),
+                    send_match_history_button.into(),
                 ])
                 .spacing(SPACING)
                 .into()
@@ -263,6 +301,7 @@ impl Application for App {
 fn check_api_response(
     ok_msg: &'static str,
     err_msg: &'static str,
+    message_end: Message,
 ) -> impl FnOnce(Result<(), Error>) -> Message {
     move |resp| {
         if let Err(e) = resp {
@@ -270,11 +309,11 @@ fn check_api_response(
             if matches!(e, Error::Request(_)) {
                 Message::Disconnect
             } else {
-                Message::Nothing
+                message_end
             }
         } else {
             log::info!("{ok_msg}");
-            Message::Nothing
+            message_end
         }
     }
 }
@@ -302,5 +341,6 @@ async fn create_inner_app() -> Result<InnerApp, Error> {
     Ok(InnerApp {
         api_client,
         friends,
+        sending_games: false,
     })
 }
