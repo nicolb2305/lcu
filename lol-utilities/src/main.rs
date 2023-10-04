@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 use crate::{
     theme::Theme,
-    widget::{Button, Checkbox, Column, Container, Element, Row, Text},
+    widget::{Button, Checkbox, Column, Container, Element, Row, Scrollable, Text},
 };
 use client_api::{
     actions::{
@@ -20,13 +20,14 @@ mod theme;
 mod widget;
 
 const SPACING: u16 = 22;
+const ELEMENT_WIDTH: u16 = 170;
 
 fn main() -> Result<()> {
     // $env:RUST_LOG = "lol_utilities,client_api"
     env_logger::init();
     App::run(Settings {
         window: iced::window::Settings {
-            size: (800, 300),
+            size: (1000, 300),
             resizable: true,
             decorations: true,
             icon: Some(icon::from_file_data(
@@ -219,11 +220,13 @@ impl Application for App {
         #[allow(clippy::single_match_else)]
         let content: Element<'_, _> = match self.inner.as_ref() {
             Some(inner) => {
-                let create_lobby_button =
-                    Button::new("Create lobby!").on_press(Message::CreateTournamentDraftLobby);
+                let create_lobby_button = Button::new("Create lobby!")
+                    .on_press(Message::CreateTournamentDraftLobby)
+                    .width(ELEMENT_WIDTH);
 
-                let create_aram_lobby_button =
-                    Button::new("Create ARAM lobby!").on_press(Message::CreateBlindPickLobby);
+                let create_aram_lobby_button = Button::new("Create ARAM lobby!")
+                    .on_press(Message::CreateBlindPickLobby)
+                    .width(ELEMENT_WIDTH);
 
                 let create_lobby_column = Column::with_children(vec![
                     create_lobby_button.into(),
@@ -231,8 +234,9 @@ impl Application for App {
                 ])
                 .spacing(6);
 
-                let update_friends_list_button =
-                    Button::new("Update friends list").on_press(Message::UpdateFriends);
+                let update_friends_list_button = Button::new("Update friends list")
+                    .on_press(Message::UpdateFriends)
+                    .width(ELEMENT_WIDTH);
 
                 let checkmarks_column = inner
                     .friends
@@ -243,25 +247,28 @@ impl Application for App {
                         }))
                     })
                     .spacing(6);
+                let scroller = Scrollable::new(checkmarks_column)
+                    .height(200)
+                    .width(ELEMENT_WIDTH);
 
-                let friends_list_column = Column::with_children(vec![
-                    update_friends_list_button.into(),
-                    checkmarks_column.into(),
-                ])
-                .spacing(SPACING);
+                let friends_list_column =
+                    Column::with_children(vec![update_friends_list_button.into(), scroller.into()])
+                        .spacing(SPACING);
 
-                let invite_button = Button::new("Invite!").on_press(Message::Invite);
+                let invite_button = Button::new("Invite!")
+                    .on_press(Message::Invite)
+                    .width(ELEMENT_WIDTH);
 
-                let randomize_teams_button =
-                    Button::new("Randomize teams!").on_press(Message::RandomizeTeams);
+                let randomize_teams_button = Button::new("Randomize teams!")
+                    .on_press(Message::RandomizeTeams)
+                    .width(ELEMENT_WIDTH);
 
                 let send_match_history_button = if inner.sending_games {
-                    Button::new("Sending...")
-                        .style(theme::Button::Secondary)
-                        .on_press(Message::Nothing)
+                    Button::new("Sending...").on_press_maybe(None)
                 } else {
                     Button::new("Send match history!").on_press(Message::SendMatchHistory)
-                };
+                }
+                .width(ELEMENT_WIDTH);
 
                 Row::with_children(vec![
                     create_lobby_column.into(),
