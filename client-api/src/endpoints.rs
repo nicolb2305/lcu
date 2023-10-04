@@ -54,8 +54,8 @@ impl Client {
 
     pub(crate) async fn get_lol_match_history_v1_products_lol_current_summoner_matches(
         &self,
-        beg_index: Option<u32>,
-        end_index: Option<u32>,
+        beg_index: Option<u8>,
+        end_index: Option<u8>,
     ) -> Result<LolMatchHistoryMatchHistoryList, Error> {
         // let params = v
         self.get(

@@ -4,7 +4,7 @@ use iced::{
     widget::{
         button, checkbox, container,
         scrollable::{self, Scroller},
-        text,
+        slider, text,
     },
     Background, BorderRadius, Color,
 };
@@ -166,6 +166,58 @@ impl scrollable::StyleSheet for Theme {
                 border_radius: 5.0.into(),
                 border_width: 0.,
                 border_color: Color::TRANSPARENT,
+            },
+        }
+    }
+}
+
+impl slider::StyleSheet for Theme {
+    type Style = ();
+
+    fn active(&self, style: &Self::Style) -> slider::Appearance {
+        slider::Appearance {
+            rail: slider::Rail {
+                colors: (color!(0x61, 0x4F, 0x21), color!(0x1E, 0x23, 0x28)),
+                width: 3.,
+                border_radius: 1.0.into(),
+            },
+            handle: slider::Handle {
+                shape: slider::HandleShape::Circle { radius: 10. },
+                color: color!(0x15, 0x1C, 0x22),
+                border_width: 4.0,
+                border_color: color!(0xB1, 0x8C, 0x41),
+            },
+        }
+    }
+
+    fn hovered(&self, style: &Self::Style) -> slider::Appearance {
+        slider::Appearance {
+            rail: slider::Rail {
+                colors: (color!(0x61, 0x4F, 0x21), color!(0x1E, 0x23, 0x28)),
+                width: 3.,
+                border_radius: 1.0.into(),
+            },
+            handle: slider::Handle {
+                shape: slider::HandleShape::Circle { radius: 10. },
+                color: color!(0x15, 0x1C, 0x22),
+                border_width: 4.0,
+                border_color: color!(0xB1, 0x8C, 0x41),
+            },
+        }
+    }
+
+    fn dragging(&self, style: &Self::Style) -> slider::Appearance {
+        slider::Appearance {
+            rail: slider::Rail {
+                colors: (color!(0x61, 0x4F, 0x21), color!(0x1E, 0x23, 0x28)),
+                width: 3.,
+                border_radius: 1.0.into(),
+            },
+            handle: slider::Handle {
+                shape: slider::HandleShape::Circle { radius: 10. },
+                color: color!(0x15, 0x1C, 0x22),
+                border_width: 4.0,
+                border_color: color!(0xB1, 0x8C, 0x41),
             },
         }
     }

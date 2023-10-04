@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 use crate::{
     theme::Theme,
-    widget::{Button, Checkbox, Column, Container, Element, Row, Scrollable, Text},
+    widget::{Column, Container, Element},
 };
 use client_api::{
     actions::{
@@ -12,7 +12,14 @@ use client_api::{
     Error,
 };
 use eyre::Result;
-use iced::{executor, window::icon, Application, Command, Length, Settings};
+use iced::{
+    alignment::Horizontal,
+    executor,
+    widget::column,
+    widget::{button, checkbox, row, scrollable, slider, text},
+    window::icon,
+    Application, Command, Length, Settings,
+};
 use image::ImageFormat;
 use std::{collections::BTreeMap, sync::Arc};
 
@@ -56,6 +63,7 @@ struct InnerApp {
     api_client: Arc<Client>,
     friends: BTreeMap<Summoner, bool>,
     sending_games: bool,
+    num_matches_to_check: u8,
 }
 
 #[derive(Debug, Clone)]
@@ -66,6 +74,7 @@ enum Message {
     Invite,
     SendMatchHistory,
     DoneSendingMatchHistory,
+    MatchesToCheckChanged(u8),
     AttemptConnection,
     Connect(Option<InnerApp>),
     Disconnect,
@@ -142,10 +151,11 @@ impl Application for App {
                 )
             }
             Message::SendMatchHistory => {
+                let num_matches_to_check = self.inner.as_ref().unwrap().num_matches_to_check;
                 self.inner.as_mut().unwrap().sending_games = true;
                 let client = self.inner.as_ref().unwrap().api_client.clone();
                 Command::perform(
-                    async move { post_custom_games_to_pasanapi(&client).await },
+                    async move { post_custom_games_to_pasanapi(&client, num_matches_to_check).await },
                     check_api_response(
                         "Sent custom games",
                         "Failed to send custom games",
@@ -213,6 +223,10 @@ impl Application for App {
                 self.inner.as_mut().unwrap().friends = friends;
                 Command::none()
             }
+            Message::MatchesToCheckChanged(i) => {
+                self.inner.as_mut().unwrap().num_matches_to_check = i;
+                Command::none()
+            }
         }
     }
 
@@ -220,79 +234,78 @@ impl Application for App {
         #[allow(clippy::single_match_else)]
         let content: Element<'_, _> = match self.inner.as_ref() {
             Some(inner) => {
-                let create_lobby_button = Button::new("Create lobby!")
-                    .on_press(Message::CreateTournamentDraftLobby)
-                    .width(ELEMENT_WIDTH);
-
-                let create_aram_lobby_button = Button::new("Create ARAM lobby!")
-                    .on_press(Message::CreateBlindPickLobby)
-                    .width(ELEMENT_WIDTH);
-
-                let create_lobby_column = Column::with_children(vec![
-                    create_lobby_button.into(),
-                    create_aram_lobby_button.into(),
-                ])
+                let create_lobby_column = column!(
+                    button("Create lobby!")
+                        .on_press(Message::CreateTournamentDraftLobby)
+                        .width(ELEMENT_WIDTH),
+                    button("Create ARAM lobby!")
+                        .on_press(Message::CreateBlindPickLobby)
+                        .width(ELEMENT_WIDTH),
+                )
                 .spacing(6);
-
-                let update_friends_list_button = Button::new("Update friends list")
-                    .on_press(Message::UpdateFriends)
-                    .width(ELEMENT_WIDTH);
 
                 let checkmarks_column = inner
                     .friends
                     .iter()
                     .fold(Column::new(), |column, (friend, checked)| {
-                        column.push(Checkbox::new(friend.name.clone(), *checked, |_| {
+                        column.push(checkbox(friend.name.clone(), *checked, |_| {
                             Message::FriendToggled(friend.clone())
                         }))
                     })
                     .spacing(6);
-                let scroller = Scrollable::new(checkmarks_column)
-                    .height(200)
-                    .width(ELEMENT_WIDTH);
 
-                let friends_list_column =
-                    Column::with_children(vec![update_friends_list_button.into(), scroller.into()])
-                        .spacing(SPACING);
+                let friends_list_column = column!(
+                    button("Update friends list")
+                        .on_press(Message::UpdateFriends)
+                        .width(ELEMENT_WIDTH),
+                    scrollable(checkmarks_column)
+                        .height(200)
+                        .width(ELEMENT_WIDTH)
+                )
+                .spacing(SPACING);
 
-                let invite_button = Button::new("Invite!")
-                    .on_press(Message::Invite)
-                    .width(ELEMENT_WIDTH);
+                let send_match_history_column = column!(
+                    if inner.sending_games {
+                        button("Sending...").on_press_maybe(None)
+                    } else {
+                        button("Send match history!").on_press(Message::SendMatchHistory)
+                    }
+                    .width(ELEMENT_WIDTH),
+                    slider(
+                        1..=200,
+                        inner.num_matches_to_check,
+                        Message::MatchesToCheckChanged
+                    )
+                    .width(ELEMENT_WIDTH),
+                    text(format!(
+                        "Number of games to check: {}",
+                        inner.num_matches_to_check
+                    ))
+                    .horizontal_alignment(Horizontal::Center)
+                    .width(ELEMENT_WIDTH)
+                )
+                .spacing(SPACING);
 
-                let randomize_teams_button = Button::new("Randomize teams!")
-                    .on_press(Message::RandomizeTeams)
-                    .width(ELEMENT_WIDTH);
-
-                let send_match_history_button = if inner.sending_games {
-                    Button::new("Sending...").on_press_maybe(None)
-                } else {
-                    Button::new("Send match history!").on_press(Message::SendMatchHistory)
-                }
-                .width(ELEMENT_WIDTH);
-
-                Row::with_children(vec![
-                    create_lobby_column.into(),
-                    friends_list_column.into(),
-                    invite_button.into(),
-                    randomize_teams_button.into(),
-                    send_match_history_button.into(),
-                ])
+                row!(
+                    create_lobby_column,
+                    friends_list_column,
+                    button("Invite!")
+                        .on_press(Message::Invite)
+                        .width(ELEMENT_WIDTH),
+                    button("Randomize teams!")
+                        .on_press(Message::RandomizeTeams)
+                        .width(ELEMENT_WIDTH),
+                    send_match_history_column,
+                )
                 .spacing(SPACING)
                 .into()
             }
-            None => {
-                let client_not_found_text = Text::new("Client not found");
-
-                let connect_to_client_button =
-                    Button::new("Connect to client").on_press(Message::AttemptConnection);
-
-                Column::with_children(vec![
-                    client_not_found_text.into(),
-                    connect_to_client_button.into(),
-                ])
-                .spacing(SPACING)
-                .into()
-            }
+            None => column!(
+                text("Client not found"),
+                button("Connect to client").on_press(Message::AttemptConnection),
+            )
+            .spacing(SPACING)
+            .into(),
         };
 
         Container::new(content)
@@ -349,5 +362,6 @@ async fn create_inner_app() -> Result<InnerApp, Error> {
         api_client,
         friends,
         sending_games: false,
+        num_matches_to_check: 10,
     })
 }

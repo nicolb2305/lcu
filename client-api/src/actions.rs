@@ -145,11 +145,17 @@ pub async fn invite_to_lobby(client: &Client, summoners: &[u64]) -> Result<(), E
 ///
 /// # Errors
 /// Fails if the client api cannot be reached, or if the pasanapi cannot be reached.
-pub async fn post_custom_games_to_pasanapi(client: &Client) -> Result<(), Error> {
+pub async fn post_custom_games_to_pasanapi(
+    client: &Client,
+    num_matches_to_check: u8,
+) -> Result<(), Error> {
     let req_client = reqwest::Client::new();
 
     let match_history = client
-        .get_lol_match_history_v1_products_lol_current_summoner_matches(None, Some(200))
+        .get_lol_match_history_v1_products_lol_current_summoner_matches(
+            None,
+            Some(num_matches_to_check),
+        )
         .await?
         .games
         .games;
