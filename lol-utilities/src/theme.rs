@@ -93,6 +93,15 @@ impl button::StyleSheet for Theme {
 
     fn disabled(&self, style: &Self::Style) -> button::Appearance {
         button::Appearance {
+            background: Some(color!(0x1E, 0x28, 0x2D).into()),
+            border_width: 1.0,
+            border_color: color!(0x5B, 0x5A, 0x56),
+            ..Default::default()
+        }
+    }
+
+    fn pressed(&self, style: &Self::Style) -> button::Appearance {
+        button::Appearance {
             background: Some(color!(0x0F, 0x18, 0x1F).into()),
             border_width: 1.0,
             border_color: color!(0x46, 0x37, 0x14),
