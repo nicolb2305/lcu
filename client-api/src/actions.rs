@@ -76,9 +76,14 @@ pub async fn create_custom(client: &Client, draft_type: DraftType, map: Map) -> 
         ..Default::default()
     };
 
+    let game_mode = match map {
+        Map::SummonersRift => "CLASSIC",
+        Map::HowlingAbyss => "ARAM",
+    };
+
     let config = LolLobbyLobbyCustomGameConfiguration {
         map_id: map as i32,
-        game_mode: "CLASSIC".to_string(),
+        game_mode: game_mode.to_string(),
         mutators: queue_config.clone(),
         game_type_config: queue_config,
         spectator_policy: LolLobbyQueueCustomGameSpectatorPolicy::AllAllowed,

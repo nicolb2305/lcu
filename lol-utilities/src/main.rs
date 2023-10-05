@@ -16,7 +16,7 @@ use iced::{
     alignment::Horizontal,
     executor,
     widget::column,
-    widget::{button, checkbox, row, scrollable, slider, text},
+    widget::{button, checkbox, container, row, scrollable, slider, text},
     window::icon,
     Application, Command, Length, Settings,
 };
@@ -244,15 +244,19 @@ impl Application for App {
                 )
                 .spacing(6);
 
-                let checkmarks_column = inner
-                    .friends
-                    .iter()
-                    .fold(Column::new(), |column, (friend, checked)| {
-                        column.push(checkbox(friend.name.clone(), *checked, |_| {
-                            Message::FriendToggled(friend.clone())
-                        }))
-                    })
-                    .spacing(6);
+                let checkmarks_column = container(
+                    inner
+                        .friends
+                        .iter()
+                        .fold(Column::new(), |column, (friend, checked)| {
+                            column.push(checkbox(friend.name.clone(), *checked, |_| {
+                                Message::FriendToggled(friend.clone())
+                            }))
+                        })
+                        .spacing(6),
+                )
+                .width(ELEMENT_WIDTH)
+                .style(theme::Container::Bordered);
 
                 let friends_list_column = column!(
                     button("Update friends list")

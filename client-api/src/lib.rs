@@ -33,3 +33,16 @@ pub enum Error {
     #[error("Player is not in a lobby")]
     LobbyNotFound,
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{client::Client, Error};
+
+    #[tokio::test]
+    async fn get_lobby() -> Result<(), Error> {
+        let client = Client::new()?;
+        let lobby = client.get_lol_lobby_v2_lobby().await?;
+        dbg!(lobby);
+        Ok(())
+    }
+}

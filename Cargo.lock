@@ -302,6 +302,7 @@ dependencies = [
  "serde_json",
  "sysinfo",
  "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -1539,7 +1540,7 @@ dependencies = [
 
 [[package]]
 name = "lol-utilities"
-version = "0.1.8"
+version = "0.1.9"
 dependencies = [
  "client-api",
  "env_logger",

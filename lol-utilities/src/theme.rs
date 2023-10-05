@@ -144,8 +144,8 @@ impl scrollable::StyleSheet for Theme {
             // background: Some(color!(0x01, 0x0A, 0x13)),
             background: None,
             border_radius: 0.0.into(),
-            border_width: 0.,
-            border_color: Color::TRANSPARENT,
+            border_width: 1.,
+            border_color: color!(0x78, 0x5A, 0x28),
             scroller: Scroller {
                 color: color!(0x78, 0x5A, 0x28),
                 border_radius: 5.0.into(),
@@ -159,8 +159,8 @@ impl scrollable::StyleSheet for Theme {
         scrollable::Scrollbar {
             background: None,
             border_radius: 0.0.into(),
-            border_width: 0.,
-            border_color: Color::TRANSPARENT,
+            border_width: 1.,
+            border_color: color!(0x78, 0x5A, 0x28),
             scroller: Scroller {
                 color: color!(0xC8, 0xAA, 0x6E),
                 border_radius: 5.0.into(),
