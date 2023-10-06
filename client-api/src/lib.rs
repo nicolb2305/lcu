@@ -16,8 +16,6 @@ pub enum Error {
     ApiError(ApiError),
     #[error("Deserialization of api response failed: {0}")]
     ApiErrorDeserialization(#[from] serde_json::Error),
-    #[error("Regex construction failed: {0}")]
-    RegexContruction(#[from] regex_lite::Error),
     #[error("Client could not be found")]
     ClientNotFound,
     #[error("Client port argument could not be found")]

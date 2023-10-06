@@ -3,7 +3,6 @@ use std::time::Duration;
 use crate::{types::ApiError, Error};
 use base64::prelude::BASE64_STANDARD_NO_PAD;
 use base64::Engine;
-use regex_lite::Regex;
 use reqwest::{
     header::{HeaderMap, HeaderValue},
     Certificate,
@@ -25,9 +24,6 @@ impl Client {
     /// # Errors
     /// Fails if the client process is not running
     pub fn new() -> Result<Self, Error> {
-        let port_re = Regex::new(r"--app-port=([0-9]*)")?;
-        let auth_token_re = Regex::new(r"--remoting-auth-token=([\w-]*)")?;
-
         let mut sys = System::new_all();
         sys.refresh_all();
 
@@ -38,16 +34,15 @@ impl Client {
             .map(|p| p.cmd().join(" "))
             .ok_or(Error::ClientNotFound)?;
 
-        let port = port_re
-            .captures(&cmd_args)
-            .and_then(|x| x.get(1))
-            .map(|x| x.as_str().parse())
+        let port = cmd_args
+            .split(' ')
+            .find_map(|x| x.strip_prefix("--app-port="))
+            .map(str::parse)
             .ok_or(Error::PortNotFound)??;
-        let auth_token = auth_token_re
-            .captures(&cmd_args)
-            .and_then(|x| x.get(1))
-            .map(|x| x.as_str().to_owned())
-            .ok_or(Error::PortNotFound)?;
+        let auth_token = cmd_args
+            .split(' ')
+            .find_map(|x| x.strip_prefix("--remoting-auth-token="))
+            .ok_or(Error::AuthNotFound)?;
         let encoded_auth_token = BASE64_STANDARD_NO_PAD.encode(format!("riot:{auth_token}"));
 
         let cert = Certificate::from_pem(include_bytes!("../riotgames.pem"))?;

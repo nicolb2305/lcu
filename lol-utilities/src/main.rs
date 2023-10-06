@@ -76,7 +76,7 @@ enum Message {
     DoneSendingMatchHistory,
     MatchesToCheckChanged(u8),
     AttemptConnection,
-    Connect(Option<InnerApp>),
+    Connect(InnerApp),
     Disconnect,
     FriendToggled(Summoner),
     UpdateFriends,
@@ -93,7 +93,7 @@ impl Application for App {
     fn new(_flags: ()) -> (Self, Command<Message>) {
         (
             App { inner: None },
-            Command::perform(create_inner_app(), |inner| Message::Connect(inner.ok())),
+            Command::perform(create_inner_app(), check_client_connection),
         )
     }
 
@@ -200,18 +200,12 @@ impl Application for App {
                 }
                 Command::none()
             }
-            Message::Connect(Some(inner)) => {
+            Message::Connect(inner) => {
                 self.inner = Some(inner);
-                log::info!("Connected to client");
-                Command::none()
-            }
-            Message::Connect(None) => {
-                log::error!("Failed to connect to client");
                 Command::none()
             }
             Message::AttemptConnection => {
-                log::info!("Attempting to connect to client");
-                Command::perform(create_inner_app(), |inner| Message::Connect(inner.ok()))
+                Command::perform(create_inner_app(), check_client_connection)
             }
             Message::Nothing => Command::none(),
             Message::Disconnect => {
@@ -368,4 +362,18 @@ async fn create_inner_app() -> Result<InnerApp, Error> {
         sending_games: false,
         num_matches_to_check: 10,
     })
+}
+
+fn check_client_connection(res: Result<InnerApp, Error>) -> Message {
+    log::info!("Attempting to connect to client");
+    match res {
+        Ok(client) => {
+            log::info!("Connected to client");
+            Message::Connect(client)
+        }
+        Err(e) => {
+            log::error!("Failed to connect to client: {e}");
+            Message::Nothing
+        }
+    }
 }
