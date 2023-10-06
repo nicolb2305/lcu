@@ -1,4 +1,4 @@
-use crate::{types::ReturnType, Error};
+use crate::{types::ApiResult, Error};
 use base64::prelude::BASE64_STANDARD_NO_PAD;
 use base64::Engine;
 use reqwest::{
@@ -75,7 +75,7 @@ impl Client {
             .query(query)
             .send()
             .await?
-            .json::<ReturnType<T>>()
+            .json::<ApiResult<T>>()
             .await?
             .into()
     }
@@ -92,7 +92,7 @@ impl Client {
             .json(body)
             .send()
             .await?
-            .json::<ReturnType<T>>()
+            .json::<ApiResult<T>>()
             .await?
             .into()
     }

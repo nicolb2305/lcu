@@ -24,16 +24,16 @@ impl Display for ApiError {
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(untagged)]
-pub enum ReturnType<T> {
+pub enum ApiResult<T> {
     Ok(T),
     Err(ApiError),
 }
 
-impl<T> From<ReturnType<T>> for Result<T, Error> {
-    fn from(value: ReturnType<T>) -> Self {
+impl<T> From<ApiResult<T>> for Result<T, Error> {
+    fn from(value: ApiResult<T>) -> Self {
         match value {
-            ReturnType::Ok(val) => Ok(val),
-            ReturnType::Err(e) => Err(Error::ApiError(e)),
+            ApiResult::Ok(val) => Ok(val),
+            ApiResult::Err(e) => Err(Error::ApiError(e)),
         }
     }
 }
