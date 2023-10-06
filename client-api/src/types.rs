@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display};
 
-use crate::Error;
-
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiError {
@@ -10,6 +8,8 @@ pub struct ApiError {
     pub http_status: u32,
     pub message: String,
 }
+
+impl std::error::Error for ApiError {}
 
 impl Display for ApiError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -21,21 +21,7 @@ impl Display for ApiError {
     }
 }
 
-#[derive(Deserialize, Debug, Clone)]
-#[serde(untagged)]
-pub enum ReturnType<T> {
-    Ok(T),
-    Err(ApiError),
-}
-
-impl<T> From<ReturnType<T>> for Result<T, Error> {
-    fn from(value: ReturnType<T>) -> Self {
-        match value {
-            ReturnType::Ok(val) => Ok(val),
-            ReturnType::Err(e) => Err(Error::ApiError(e)),
-        }
-    }
-}
+pub type ReturnType<T> = Result<T, ApiError>;
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
