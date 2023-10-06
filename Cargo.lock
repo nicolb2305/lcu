@@ -302,6 +302,7 @@ dependencies = [
  "sysinfo",
  "thiserror",
  "tokio",
+ "url",
 ]
 
 [[package]]

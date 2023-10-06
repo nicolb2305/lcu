@@ -24,6 +24,10 @@ pub enum Error {
     AuthNotFound,
     #[error("Parsing of port number failed: {0}")]
     PortParsing(#[from] ParseIntError),
+    #[error("Invalid port: {0}")]
+    InvalidPort(u16),
+    #[error("Failed to parse base url: {0}")]
+    BaseUrlConstruction(#[from] url::ParseError),
     #[error("Auth header construction failed: {0}")]
     InvalidHeader(#[from] InvalidHeaderValue),
     #[error("Team creation failed")]

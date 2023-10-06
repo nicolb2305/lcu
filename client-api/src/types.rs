@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display};
 
+use crate::Error;
+
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiError {
@@ -16,6 +18,22 @@ impl Display for ApiError {
             "{} ({}): {}",
             self.error_code, self.http_status, self.message
         )
+    }
+}
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum ReturnType<T> {
+    Ok(T),
+    Err(ApiError),
+}
+
+impl<T> From<ReturnType<T>> for Result<T, Error> {
+    fn from(value: ReturnType<T>) -> Self {
+        match value {
+            ReturnType::Ok(val) => Ok(val),
+            ReturnType::Err(e) => Err(Error::ApiError(e)),
+        }
     }
 }
 

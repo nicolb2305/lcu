@@ -1,20 +1,17 @@
-use std::time::Duration;
-
-use crate::{types::ApiError, Error};
+use crate::{types::ReturnType, Error};
 use base64::prelude::BASE64_STANDARD_NO_PAD;
 use base64::Engine;
 use reqwest::{
     header::{HeaderMap, HeaderValue},
-    Certificate,
+    Certificate, Url,
 };
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 use sysinfo::{ProcessExt, System, SystemExt};
-
-type Port = u16;
 
 #[derive(Debug, Clone)]
 pub struct Client {
-    port: Port,
+    base_url: Url,
     client: reqwest::Client,
 }
 
@@ -39,6 +36,11 @@ impl Client {
             .find_map(|x| x.strip_prefix("--app-port="))
             .map(str::parse)
             .ok_or(Error::PortNotFound)??;
+        let mut base_url = Url::parse("https://127.0.0.1")?;
+        base_url
+            .set_port(Some(port))
+            .map_err(|_| Error::InvalidPort(port))?;
+
         let auth_token = cmd_args
             .split(' ')
             .find_map(|x| x.strip_prefix("--remoting-auth-token="))
@@ -58,7 +60,7 @@ impl Client {
             .default_headers(headers)
             .build()?;
 
-        Ok(Client { port, client })
+        Ok(Client { base_url, client })
     }
 
     pub(crate) async fn get<T: for<'a> Deserialize<'a>, U: Serialize + ?Sized>(
@@ -66,21 +68,16 @@ impl Client {
         endpoint: &str,
         query: &U,
     ) -> Result<T, Error> {
-        // let temp = self
-        //     .client
-        //     .get(format!("https://127.0.0.1:{}{endpoint}", self.port))
-        //     .query(query);
-        // dbg!(&temp);
-        deserialize_response(
-            &self
-                .client
-                .get(format!("https://127.0.0.1:{}{endpoint}", self.port))
-                .query(query)
-                .send()
-                .await?
-                .bytes()
-                .await?,
-        )
+        let mut url = self.base_url.clone();
+        url.set_path(endpoint);
+        self.client
+            .get(url)
+            .query(query)
+            .send()
+            .await?
+            .json::<ReturnType<T>>()
+            .await?
+            .into()
     }
 
     pub(crate) async fn post<T: for<'a> Deserialize<'a>, R: Serialize>(
@@ -88,26 +85,15 @@ impl Client {
         endpoint: &str,
         body: &Option<R>,
     ) -> Result<T, Error> {
-        deserialize_response(
-            &self
-                .client
-                .post(format!("https://127.0.0.1:{}{endpoint}", self.port))
-                .json(&body)
-                .send()
-                .await?
-                .bytes()
-                .await?,
-        )
-    }
-}
-
-fn deserialize_response<T: for<'a> Deserialize<'a>>(body: &[u8]) -> Result<T, Error> {
-    match serde_json::from_slice(body) {
-        Ok(val) => Ok(val),
-        Err(e) => {
-            log::error!("Failed to deserialize response: {e}");
-            let api_error = serde_json::from_slice::<ApiError>(body)?;
-            Err(Error::ApiError(api_error))
-        }
+        let mut url = self.base_url.clone();
+        url.set_path(endpoint);
+        self.client
+            .post(url)
+            .json(&body)
+            .send()
+            .await?
+            .json::<ReturnType<T>>()
+            .await?
+            .into()
     }
 }
