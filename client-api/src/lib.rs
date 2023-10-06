@@ -13,7 +13,7 @@ pub enum Error {
     #[error("Api request failed: {0}")]
     Request(#[from] reqwest::Error),
     #[error("Api returned error: {0}")]
-    ApiError(#[from] ApiError),
+    ApiError(ApiError),
     #[error("Deserialization of api response failed: {0}")]
     ApiErrorDeserialization(#[from] serde_json::Error),
     #[error("Client could not be found")]

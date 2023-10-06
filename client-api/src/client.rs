@@ -70,14 +70,14 @@ impl Client {
     ) -> Result<T, Error> {
         let mut url = self.base_url.clone();
         url.set_path(endpoint);
-        Ok(self
-            .client
+        self.client
             .get(url)
             .query(query)
             .send()
             .await?
             .json::<ReturnType<T>>()
-            .await??)
+            .await?
+            .into()
     }
 
     pub(crate) async fn post<T: for<'a> Deserialize<'a>, R: Serialize>(
@@ -87,13 +87,13 @@ impl Client {
     ) -> Result<T, Error> {
         let mut url = self.base_url.clone();
         url.set_path(endpoint);
-        Ok(self
-            .client
+        self.client
             .post(url)
-            .json(&body)
+            .json(body)
             .send()
             .await?
             .json::<ReturnType<T>>()
-            .await??)
+            .await?
+            .into()
     }
 }

@@ -1,3 +1,4 @@
+use crate::Error;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display};
 
@@ -21,7 +22,21 @@ impl Display for ApiError {
     }
 }
 
-pub type ReturnType<T> = Result<T, ApiError>;
+#[derive(Deserialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum ReturnType<T> {
+    Ok(T),
+    Err(ApiError),
+}
+
+impl<T> From<ReturnType<T>> for Result<T, Error> {
+    fn from(value: ReturnType<T>) -> Self {
+        match value {
+            ReturnType::Ok(val) => Ok(val),
+            ReturnType::Err(e) => Err(Error::ApiError(e)),
+        }
+    }
+}
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]

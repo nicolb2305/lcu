@@ -93,7 +93,7 @@ impl Application for App {
     fn new(_flags: ()) -> (Self, Command<Message>) {
         (
             App { inner: None },
-            Command::perform(create_inner_app(), check_client_connection),
+            Command::perform(async { create_inner_app() }, check_client_connection),
         )
     }
 
@@ -202,10 +202,10 @@ impl Application for App {
             }
             Message::Connect(inner) => {
                 self.inner = Some(inner);
-                Command::none()
+                Command::perform(async {}, |()| Message::UpdateFriends)
             }
             Message::AttemptConnection => {
-                Command::perform(create_inner_app(), check_client_connection)
+                Command::perform(async { create_inner_app() }, check_client_connection)
             }
             Message::Nothing => Command::none(),
             Message::Disconnect => {
@@ -352,13 +352,12 @@ async fn get_friends(api_client: &Client) -> Result<BTreeMap<Summoner, bool>, Er
         .collect())
 }
 
-async fn create_inner_app() -> Result<InnerApp, Error> {
+fn create_inner_app() -> Result<InnerApp, Error> {
     let api_client = Arc::new(Client::new()?);
-    let friends = get_friends(&api_client).await?;
 
     Ok(InnerApp {
         api_client,
-        friends,
+        friends: BTreeMap::new(),
         sending_games: false,
         num_matches_to_check: 10,
     })
