@@ -192,3 +192,33 @@ pub async fn post_custom_games_to_pasanapi(
 
     Ok(())
 }
+
+/// Checks players previous 10 games played and invites everyone from the first custom
+/// game found.
+///
+/// # Errors
+/// Fails if client api cannot be reached, or if no recent custom games can be found.
+pub async fn invite_from_previous(client: &Client) -> Result<(), Error> {
+    let match_history = client
+        .get_lol_match_history_v1_products_lol_current_summoner_matches(None, Some(10))
+        .await?
+        .games
+        .games;
+
+    let last_game = match_history
+        .into_iter()
+        .find(|x| x.game_type == "CUSTOM_GAME")
+        .ok_or(Error::NoGamesInMatchHistory)?;
+
+    let summoners: Vec<_> = client
+        .get_lol_match_history_v1_games_by_game_id(last_game.game_id)
+        .await?
+        .participant_identities
+        .into_iter()
+        .map(|x| x.player.summoner_id)
+        .collect();
+
+    invite_to_lobby(client, &summoners).await?;
+
+    Ok(())
+}

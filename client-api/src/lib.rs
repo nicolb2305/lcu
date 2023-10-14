@@ -34,6 +34,8 @@ pub enum Error {
     TeamCreation,
     #[error("Player is not in a lobby")]
     LobbyNotFound,
+    #[error("No games in match history")]
+    NoGamesInMatchHistory,
 }
 
 #[cfg(test)]

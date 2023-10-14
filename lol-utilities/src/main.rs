@@ -5,8 +5,8 @@ use crate::{
 };
 use client_api::{
     actions::{
-        create_custom, get_online_friends, invite_to_lobby, post_custom_games_to_pasanapi,
-        randomize_teams, DraftType, Map,
+        create_custom, get_online_friends, invite_from_previous, invite_to_lobby,
+        post_custom_games_to_pasanapi, randomize_teams, DraftType, Map,
     },
     client::Client,
     Error,
@@ -81,6 +81,7 @@ enum Message {
     FriendToggled(Summoner),
     UpdateFriends,
     UpdatedFriends(BTreeMap<Summoner, bool>),
+    InvitePrevious,
     Nothing,
 }
 
@@ -200,6 +201,17 @@ impl Application for App {
                 }
                 Command::none()
             }
+            Message::InvitePrevious => {
+                let client = self.inner.as_ref().unwrap().api_client.clone();
+                Command::perform(
+                    async move { invite_from_previous(&client).await },
+                    check_api_response(
+                        "Invited previous",
+                        "Failed to invite previous",
+                        Message::Nothing,
+                    ),
+                )
+            }
             Message::Connect(inner) => {
                 self.inner = Some(inner);
                 Command::perform(async {}, |()| Message::UpdateFriends)
@@ -262,6 +274,16 @@ impl Application for App {
                 )
                 .spacing(SPACING);
 
+                let invite_column = column!(
+                    button("Invite!")
+                        .on_press(Message::Invite)
+                        .width(ELEMENT_WIDTH),
+                    button("Invite from previous game!")
+                        .on_press(Message::InvitePrevious)
+                        .width(ELEMENT_WIDTH)
+                )
+                .spacing(6);
+
                 let send_match_history_column = column!(
                     if inner.sending_games {
                         button("Sending...").on_press_maybe(None)
@@ -287,9 +309,7 @@ impl Application for App {
                 row!(
                     create_lobby_column,
                     friends_list_column,
-                    button("Invite!")
-                        .on_press(Message::Invite)
-                        .width(ELEMENT_WIDTH),
+                    invite_column,
                     button("Randomize teams!")
                         .on_press(Message::RandomizeTeams)
                         .width(ELEMENT_WIDTH),

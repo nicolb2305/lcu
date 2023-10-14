@@ -4,6 +4,7 @@ members = [
     "client-api",
     "custom-game-creator",
     "lol-utilities",
+    "lol-custom-match-history",
 ]
 resolver = "2"
 
