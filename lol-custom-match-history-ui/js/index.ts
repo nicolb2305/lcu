@@ -28,136 +28,226 @@
 
 function summonerSelectListener(champions: Champions) {
     return function (this: HTMLSelectElement, ev: Event) {
-        const main = document.getElementById("main");
-        main.replaceChildren();
+        const sidebar = document.getElementById("sidebar");
+        sidebar.replaceChildren();
 
         const summonerId = this.value;
         console.log(summonerId);
-        get_summoner_games(summonerId)
-            .then((match_list: Array<LolMatchHistoryMatchHistoryParticipant>) => {
-                match_list.reverse();
-                const matches_div = document.createElement("div");
-                main?.appendChild(matches_div);
-                matches_div.className = "matches";
 
-                const champs = new Map<number, ChampionWinrate>;
-                match_list.forEach((match) => {
-                    if (!champs.has(match.championId)) {
-                        champs.set(match.championId, {
-                            championId: match.championId,
-                            wins: 0,
-                            losses: 0,
-                            kills: 0,
-                            deaths: 0,
-                            assists: 0,
+        document.getElementById("matches").replaceChildren();
+        getSummonerGames(summonerId)
+            .then(constructMatchHistory(20));
+
+        getSummonerStats(summonerId).then((stats) => {
+            stats
+                .sort((a, b) => (b.wins + b.losses) - (a.wins + a.losses))
+                .forEach((val) => {
+                    const article = document.createElement("article");
+                    article.className = "champion-stat";
+
+                    const champIcon = document.createElement("img");
+                    champIcon.src = `https://cdn.communitydragon.org/latest/champion/${val.championId}/square`;
+                    champIcon.className = "stats-icon";
+                    champIcon.width = 48;
+                    article.appendChild(champIcon);
+
+                    const stats1 = document.createElement("div");
+                    stats1.className = "stats";
+                    const games = val.wins + val.losses;
+                    article.setAttribute("style", `--winrate: ${Math.round((val.wins / games) * 100)}`);
+                    stats1.textContent = (val.wins / games)
+                        .toLocaleString(undefined, {
+                            style: 'percent',
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 1
                         });
+
+                    stats1.textContent += ` (${games} ${games != 1 ? "games" : "game"})`;
+
+                    const stats2 = document.createElement("div");
+                    const kills = (val.kills / games)
+                        .toLocaleString(undefined, {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 1
+                        });
+                    const deaths = (val.deaths / games)
+                        .toLocaleString(undefined, {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 1
+                        });
+                    const assists = (val.assists / games)
+                        .toLocaleString(undefined, {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 1
+                        });
+                    var kda;
+                    if (val.deaths === 0) {
+                        kda = "Perfect";
+                    } else {
+                        kda = ((val.kills + val.assists) / val.deaths)
+                            .toLocaleString(undefined, {
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 2
+                            });
                     }
 
-                    const champ = champs.get(match.championId);
-                    if (champ != undefined) {
-                        champ.kills += match.stats.kills;
-                        champ.deaths += match.stats.deaths;
-                        champ.assists += match.stats.assists;
-                        if (match.stats.win) {
-                            champ.wins += 1;
-                        } else {
-                            champ.losses += 1;
-                        }
-                    }
+                    stats2.textContent += `${kills} / ${deaths} / ${assists} (${kda} KDA)`;
 
-                    const details = document.createElement("details");
-                    details.className = match.stats.win ? "win" : "loss";
-
-                    const summary = document.createElement("summary");
-                    const champ_icon = document.createElement("img");
-                    const game_result = document.createElement("span");
-                    game_result.textContent = `${match.stats.kills} / ${match.stats.deaths} / ${match.stats.assists}`;
-                    champ_icon.src = `https://cdn.communitydragon.org/latest/champion/${match.championId}/square`;
-                    champ_icon.className = "champion-icon";
-                    champ_icon.width = 48;
-                    summary.appendChild(champ_icon);
-                    summary.appendChild(game_result);
-
-                    const p = document.createElement("p");
-                    p.innerHTML = "test";
-
-                    details.appendChild(summary);
-                    details.appendChild(p);
-                    matches_div?.appendChild(details);
+                    article.appendChild(stats1);
+                    article.appendChild(stats2);
+                    sidebar.appendChild(article);
                 });
+        })
 
-                const sidebar = document.createElement("div");
-                main?.prepend(sidebar);
-                sidebar.className = "sidebar";
-                Array.from(champs.values())
-                    .sort((a, b) => (b.wins + b.losses) - (a.wins + a.losses))
-                    .forEach((val) => {
-                        const article = document.createElement("article");
-                        article.className = "champion-stat";
-
-                        const champ_icon = document.createElement("img");
-                        champ_icon.src = `https://cdn.communitydragon.org/latest/champion/${val.championId}/square`;
-                        champ_icon.className = "stats-icon";
-                        champ_icon.width = 48;
-                        article.appendChild(champ_icon);
-
-                        const stats1 = document.createElement("div");
-                        stats1.className = "stats";
-                        const games = val.wins + val.losses;
-                        article.setAttribute("style", `--winrate: ${Math.round((val.wins / games) * 100)}`);
-                        stats1.textContent = (val.wins / games)
-                            .toLocaleString(undefined, {
-                                style: 'percent',
-                                minimumFractionDigits: 0,
-                                maximumFractionDigits: 1
-                            });
-
-                        stats1.textContent += ` (${games} ${games != 1 ? "games" : "game"})`;
-
-                        const stats2 = document.createElement("div");
-                        const kills = (val.kills / games)
-                            .toLocaleString(undefined, {
-                                minimumFractionDigits: 0,
-                                maximumFractionDigits: 1
-                            });
-                        const deaths = (val.deaths / games)
-                            .toLocaleString(undefined, {
-                                minimumFractionDigits: 0,
-                                maximumFractionDigits: 1
-                            });
-                        const assists = (val.assists / games)
-                            .toLocaleString(undefined, {
-                                minimumFractionDigits: 0,
-                                maximumFractionDigits: 1
-                            });
-                        var kda;
-                        if (val.deaths === 0) {
-                            kda = "Perfect";
-                        } else {
-                            kda = ((val.kills + val.assists) / val.deaths)
-                                .toLocaleString(undefined, {
-                                    minimumFractionDigits: 0,
-                                    maximumFractionDigits: 2
-                                });
-                        }
-
-                        stats2.textContent += `${kills} / ${deaths} / ${assists} (${kda} KDA)`;
-
-                        article.appendChild(stats1);
-                        article.appendChild(stats2);
-                        sidebar.appendChild(article);
-                    });
-            })
     }
 }
 
-async function get_summoner_games(
+function fetchMoreMatchesListener(offset: number) {
+    return function (ev) {
+        document.getElementById("fetch-matches")?.remove();
+        const summonerId = (document.getElementById("summonerSelect") as HTMLSelectElement).value;
+        getSummonerGames(summonerId, 20, offset).then(constructMatchHistory(offset));
+    }
+}
+
+function constructMatchHistory(offset: number) {
+    return function (match_list: Array<LolMatchHistoryMatchHistoryGame>) {
+        const matchesDiv = document.getElementById("matches");
+
+        const summonerId = (document.getElementById("summonerSelect") as HTMLSelectElement).value;
+        match_list.forEach((match) => {
+            const time = new Date(match.gameCreation);
+
+            var participantId: number;
+            match.participantIdentities.forEach((participantIdentity) => {
+                if (participantIdentity.player.summonerId.toString() === summonerId) {
+                    participantId = participantIdentity.participantId;
+                }
+            });
+            var player_stats: LolMatchHistoryMatchHistoryParticipant;
+            match.participants.forEach((participant) => {
+                if (participant.participantId === participantId) {
+                    player_stats = participant;
+                }
+            });
+            const details = document.createElement("details");
+            details.className = player_stats.stats.win ? "win" : "loss";
+
+            const summary = document.createElement("summary");
+
+            const champIcon = document.createElement("img");
+            champIcon.src = `https://cdn.communitydragon.org/latest/champion/${player_stats.championId}/square`;
+            champIcon.className = "champion-icon";
+            champIcon.width = 48;
+            summary.appendChild(champIcon);
+
+            const game_result = document.createElement("span");
+            game_result.textContent = `${player_stats.stats.kills} / ${player_stats.stats.deaths} / ${player_stats.stats.assists}`;
+            summary.appendChild(game_result);
+
+            const game_date = document.createElement("span");
+            game_date.className = "match-date";
+            game_date.textContent = time.toLocaleDateString();
+            summary.appendChild(game_date);
+
+            const p = document.createElement("p");
+            p.innerHTML = "test";
+
+            details.appendChild(summary);
+            details.appendChild(p);
+            matchesDiv?.appendChild(details);
+        });
+        if (match_list.length != 0) {
+            const fetchMoreMatchesButton = document.createElement("button");
+            fetchMoreMatchesButton.id = "fetch-matches";
+            fetchMoreMatchesButton.textContent = "Load more...";
+            fetchMoreMatchesButton.addEventListener("click", fetchMoreMatchesListener(offset));
+            matchesDiv?.appendChild(fetchMoreMatchesButton);
+        }
+    }
+}
+
+async function getSummonerGames(
     summonerId: number | string,
-    amount: number = 1000,
+    amount: number = 20,
     offset: number = 0
-): Promise<Array<LolMatchHistoryMatchHistoryParticipant>> {
-    const url = `https://api.påsan.com/summoner/${summonerId}?amount=${amount}&offset=${offset}`;
+): Promise<Array<LolMatchHistoryMatchHistoryGame>> {
+    const url = `https://api.påsan.com/summoner_matches/${summonerId}?amount=${amount}&offset=${offset}`;
     return await fetch(url).then(resp => resp.json());
+}
+
+async function getSummonerStats(
+    summonerId: number | string
+): Promise<Array<ChampionStats>> {
+    const url = `https://api.påsan.com/summoner_stats/${summonerId}`;
+    return await fetch(url).then(resp => resp.json());
+}
+
+interface ChampionStats {
+    championId: number,
+    wins: number,
+    losses: number,
+    kills: number,
+    deaths: number,
+    assists: number,
+}
+
+
+interface LolMatchHistoryMatchHistoryGame {
+    id: number,
+    gameId: number,
+    platformId: string,
+    gameCreation: number,
+    gameCreationDate: string,
+    gameDuration: number,
+    queueId: number,
+    mapId: number,
+    seasonId: number,
+    gameVersion: string,
+    gameMode: string,
+    gameType: string,
+    teams: Array<LolMatchHistoryMatchHistoryTeam>,
+    participants: Array<LolMatchHistoryMatchHistoryParticipant>,
+    participantIdentities: Array<LolMatchHistoryMatchHistoryParticipantIdentities>,
+}
+
+interface LolMatchHistoryMatchHistoryParticipantIdentities {
+    participantId: number,
+    player: LolMatchHistoryMatchHistoryParticipantIdentityPlayer,
+}
+
+interface LolMatchHistoryMatchHistoryParticipantIdentityPlayer {
+    platformId: string,
+    accountId: number,
+    summonerId: number,
+    summonerName: string,
+    currentPlatformId: string,
+    currentAccountId: number,
+    matchHistoryUri: string,
+    profileIcon: number,
+}
+
+interface LolMatchHistoryMatchHistoryTeam {
+    teamId: number,
+    win: string,
+    firstBlood: boolean,
+    firstTower: boolean,
+    firstInhibitor: boolean,
+    firstBaron: boolean,
+    firstDargon: boolean,
+    towerKills: number,
+    inhibitorKills: number,
+    baronKills: number,
+    dragonKills: number,
+    vilemawKills: number,
+    riftHeraldKills: number,
+    dominionVictoryScore: number,
+    bans: Array<LolMatchHistoryMatchHistoryTeamBan>,
+}
+
+interface LolMatchHistoryMatchHistoryTeamBan {
+    championId: number,
+    pickTurn: number,
 }
 
 interface ChampionWinrate {

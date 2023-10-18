@@ -24,7 +24,7 @@ select {
     display: inline-block;
 }
 
-.sidebar {
+#sidebar {
     margin-right: 1rem;
 }
 
@@ -35,4 +35,13 @@ select {
 
 .champion-stat {
     background-color: hsl(calc(var(--winrate) * 1.2), 46%, 33%);
+}
+
+.match-date {
+    float: right;
+}
+
+#fetch-matches {
+    margin: 1rem auto;
+    display: block;
 }
