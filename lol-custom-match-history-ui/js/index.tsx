@@ -113,19 +113,33 @@ function constructMatchHistory(offset: number) {
                     player_stats = participant;
                 }
             });
-            // const details = document.createElement("details");
             const result = player_stats.stats.win ? "win" : "loss";
-            const square_url = `https://cdn.communitydragon.org/latest/champion/${player_stats.championId}/square`;
+            const squareUrl = `https://cdn.communitydragon.org/latest/champion/${player_stats.championId}/square`;
             const kda_string = `${player_stats.stats.kills} / ${player_stats.stats.deaths} / ${player_stats.stats.assists}`;
+
+            const summonersContainer: HTMLDivElement = <div className="summoners"></div>;
+            const participants = match.participantIdentities.map((e, i) => [e, match.participants[i]]);
+            [0, 5, 1, 6, 2, 7, 3, 8, 4, 9].forEach((i) => {
+                const pi = participants[i][0] as LolMatchHistoryMatchHistoryParticipantIdentities;
+                const p = participants[i][1] as LolMatchHistoryMatchHistoryParticipant;
+
+                const squareUrl = `https://cdn.communitydragon.org/latest/champion/${p.championId}/square`;
+                summonersContainer.appendChild(
+                    <div>
+                        <img className="champion-icon" src={squareUrl} width="32"></img>
+                        <span>{pi.player.summonerName}</span>
+                    </div>
+                );
+            });
 
             matchesDiv!.appendChild(
                 <details className={result}>
                     <summary>
-                        <img src={square_url} className="champion-icon" width="48"></img>
+                        <img src={squareUrl} className="champion-icon" width="48"></img>
                         <span>{kda_string}</span>
                         <span className="match-date">{time.toLocaleDateString()}</span>
                     </summary>
-                    <p>test</p>
+                    {summonersContainer}
                 </details>
             );
         });

@@ -9,6 +9,7 @@
 .champion-icon {
     vertical-align: middle;
     margin-right: 1rem;
+    margin-bottom: 0.2rem;
 }
 
 .stats-icon {
@@ -44,4 +45,9 @@ select {
 #fetch-matches {
     margin: 1rem auto;
     display: block;
+}
+
+.summoners {
+    display: grid;
+    grid-template-columns: 50% 50%;
 }
