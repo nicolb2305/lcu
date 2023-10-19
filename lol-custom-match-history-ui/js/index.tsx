@@ -14,19 +14,17 @@
                 });
         })
 
-    const versions: Array<string> = await fetch("https://ddragon.leagueoflegends.com/api/versions.json")
-        .then(resp => resp.json());
-    const champions: Champions = await fetch(`https://ddragon.leagueoflegends.com/cdn/${versions[0]}/data/en_US/champion.json`)
-        .then(resp => resp.json());
+    // const versions: Array<string> = await fetch("https://ddragon.leagueoflegends.com/api/versions.json")
+    //     .then(resp => resp.json());
+    // const champions: Champions = await fetch(`https://ddragon.leagueoflegends.com/cdn/${versions[0]}/data/en_US/champion.json`)
+    //     .then(resp => resp.json());
 
     document
         .getElementById("summonerSelect")!
-        .addEventListener("change", summonerSelectListener(champions));
-
-    console.log(champions);
+        .addEventListener("change", summonerSelectListener());
 })()
 
-function summonerSelectListener(champions: Champions) {
+function summonerSelectListener() {
     return function (this: HTMLSelectElement, ev: Event) {
         const sidebar = document.getElementById("sidebar");
         sidebar.replaceChildren();
@@ -51,7 +49,7 @@ function summonerSelectListener(champions: Champions) {
                             minimumFractionDigits: 0,
                             maximumFractionDigits: 1
                         });
-                    const games_text = games != 1 ? "games" : "game";
+                    const gamesText = games != 1 ? "games" : "game";
 
                     const format_opts = {
                         minimumFractionDigits: 0,
@@ -75,7 +73,7 @@ function summonerSelectListener(champions: Champions) {
                     sidebar.appendChild(
                         <article className="champion-stat" style={`--winrate: ${winrate}`}>
                             <img className="stats-icon" width="48" src={square_url}></img>
-                            <div className="stats">{`${winrate_formatted} (${games_text})`}</div>
+                            <div className="stats">{`${winrate_formatted} (${games} ${gamesText})`}</div>
                             <div>{`${kills} / ${deaths} / ${assists} (${kda} KDA)`}</div>
                         </article>
                     );
@@ -107,15 +105,15 @@ function constructMatchHistory(offset: number) {
                     participantId = participantIdentity.participantId;
                 }
             });
-            var player_stats: LolMatchHistoryMatchHistoryParticipant;
+            var playerStats: LolMatchHistoryMatchHistoryParticipant;
             match.participants.forEach((participant) => {
                 if (participant.participantId === participantId) {
-                    player_stats = participant;
+                    playerStats = participant;
                 }
             });
-            const result = player_stats.stats.win ? "win" : "loss";
-            const squareUrl = `https://cdn.communitydragon.org/latest/champion/${player_stats.championId}/square`;
-            const kda_string = `${player_stats.stats.kills} / ${player_stats.stats.deaths} / ${player_stats.stats.assists}`;
+            const result = playerStats.stats.win ? "win" : "loss";
+            const squareUrl = `https://cdn.communitydragon.org/latest/champion/${playerStats.championId}/square`;
+            const kda_string = `${playerStats.stats.kills} / ${playerStats.stats.deaths} / ${playerStats.stats.assists}`;
 
             const summonersContainer: HTMLDivElement = <div className="summoners"></div>;
             const participants = match.participantIdentities.map((e, i) => [e, match.participants[i]]);
@@ -124,10 +122,18 @@ function constructMatchHistory(offset: number) {
                 const p = participants[i][1] as LolMatchHistoryMatchHistoryParticipant;
 
                 const squareUrl = `https://cdn.communitydragon.org/latest/champion/${p.championId}/square`;
+                var summonerName = (
+                    <span onclick={changeSelect(pi.player.summonerId)}>
+                        {`${pi.player.summonerName} (${p.stats.kills}/${p.stats.deaths}/${p.stats.assists})`}
+                    </span>
+                );
+                if (pi.player.summonerId.toString() === summonerId) {
+                    summonerName = <span><b>{pi.player.summonerName}</b></span>;
+                }
                 summonersContainer.appendChild(
                     <div>
                         <img className="champion-icon" src={squareUrl} width="32"></img>
-                        <span>{pi.player.summonerName}</span>
+                        {summonerName}
                     </div>
                 );
             });
@@ -148,6 +154,15 @@ function constructMatchHistory(offset: number) {
             fetchMoreMatchesButton.addEventListener("click", fetchMoreMatchesListener(offset + 20));
             matchesDiv?.appendChild(fetchMoreMatchesButton);
         }
+    }
+}
+
+function changeSelect(summonerId: number | string) {
+    return () => {
+        const select = (document.getElementById("summonerSelect") as HTMLSelectElement)
+        select.value = String(summonerId);
+        var event = new Event('change');
+        select.dispatchEvent(event);
     }
 }
 
