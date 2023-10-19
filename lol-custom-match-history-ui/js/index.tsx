@@ -6,10 +6,11 @@
             summonerList
                 .sort((a, b) => a.summonerName.localeCompare(b.summonerName))
                 .forEach((summoner) => {
-                    const opt = document.createElement("option");
-                    opt.value = String(summoner.summonerId);
-                    opt.text = summoner.summonerName;
-                    sel?.append(opt);
+                    sel!.append(
+                        <option value={summoner.summonerId.toString()}>
+                            {summoner.summonerName}
+                        </option>
+                    );
                 });
         })
 
@@ -19,9 +20,8 @@
         .then(resp => resp.json());
 
     document
-        .getElementById("summonerSelect")
-        ?.addEventListener("change", summonerSelectListener(champions));
-
+        .getElementById("summonerSelect")!
+        .addEventListener("change", summonerSelectListener(champions));
 
     console.log(champions);
 })()
@@ -36,66 +36,49 @@ function summonerSelectListener(champions: Champions) {
 
         document.getElementById("matches").replaceChildren();
         getSummonerGames(summonerId)
-            .then(constructMatchHistory(20));
+            .then(constructMatchHistory(0));
 
         getSummonerStats(summonerId).then((stats) => {
             stats
                 .sort((a, b) => (b.wins + b.losses) - (a.wins + a.losses))
                 .forEach((val) => {
-                    const article = document.createElement("article");
-                    article.className = "champion-stat";
-
-                    const champIcon = document.createElement("img");
-                    champIcon.src = `https://cdn.communitydragon.org/latest/champion/${val.championId}/square`;
-                    champIcon.className = "stats-icon";
-                    champIcon.width = 48;
-                    article.appendChild(champIcon);
-
-                    const stats1 = document.createElement("div");
-                    stats1.className = "stats";
+                    const square_url = `https://cdn.communitydragon.org/latest/champion/${val.championId}/square`;
                     const games = val.wins + val.losses;
-                    article.setAttribute("style", `--winrate: ${Math.round((val.wins / games) * 100)}`);
-                    stats1.textContent = (val.wins / games)
+                    const winrate = Math.round((val.wins / games) * 100);
+                    const winrate_formatted = (val.wins / games)
                         .toLocaleString(undefined, {
                             style: 'percent',
                             minimumFractionDigits: 0,
                             maximumFractionDigits: 1
                         });
+                    const games_text = games != 1 ? "games" : "game";
 
-                    stats1.textContent += ` (${games} ${games != 1 ? "games" : "game"})`;
-
-                    const stats2 = document.createElement("div");
+                    const format_opts = {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 1
+                    };
                     const kills = (val.kills / games)
-                        .toLocaleString(undefined, {
-                            minimumFractionDigits: 0,
-                            maximumFractionDigits: 1
-                        });
+                        .toLocaleString(undefined, format_opts);
                     const deaths = (val.deaths / games)
-                        .toLocaleString(undefined, {
-                            minimumFractionDigits: 0,
-                            maximumFractionDigits: 1
-                        });
+                        .toLocaleString(undefined, format_opts);
                     const assists = (val.assists / games)
-                        .toLocaleString(undefined, {
-                            minimumFractionDigits: 0,
-                            maximumFractionDigits: 1
-                        });
-                    var kda;
+                        .toLocaleString(undefined, format_opts);
+
+                    var kda: string;
                     if (val.deaths === 0) {
                         kda = "Perfect";
                     } else {
                         kda = ((val.kills + val.assists) / val.deaths)
-                            .toLocaleString(undefined, {
-                                minimumFractionDigits: 0,
-                                maximumFractionDigits: 2
-                            });
+                            .toLocaleString(undefined, format_opts);
                     }
 
-                    stats2.textContent += `${kills} / ${deaths} / ${assists} (${kda} KDA)`;
-
-                    article.appendChild(stats1);
-                    article.appendChild(stats2);
-                    sidebar.appendChild(article);
+                    sidebar.appendChild(
+                        <article className="champion-stat" style={`--winrate: ${winrate}`}>
+                            <img className="stats-icon" width="48" src={square_url}></img>
+                            <div className="stats">{`${winrate_formatted} (${games_text})`}</div>
+                            <div>{`${kills} / ${deaths} / ${assists} (${kda} KDA)`}</div>
+                        </article>
+                    );
                 });
         })
 
@@ -130,38 +113,25 @@ function constructMatchHistory(offset: number) {
                     player_stats = participant;
                 }
             });
-            const details = document.createElement("details");
-            details.className = player_stats.stats.win ? "win" : "loss";
+            // const details = document.createElement("details");
+            const result = player_stats.stats.win ? "win" : "loss";
+            const square_url = `https://cdn.communitydragon.org/latest/champion/${player_stats.championId}/square`;
+            const kda_string = `${player_stats.stats.kills} / ${player_stats.stats.deaths} / ${player_stats.stats.assists}`;
 
-            const summary = document.createElement("summary");
-
-            const champIcon = document.createElement("img");
-            champIcon.src = `https://cdn.communitydragon.org/latest/champion/${player_stats.championId}/square`;
-            champIcon.className = "champion-icon";
-            champIcon.width = 48;
-            summary.appendChild(champIcon);
-
-            const game_result = document.createElement("span");
-            game_result.textContent = `${player_stats.stats.kills} / ${player_stats.stats.deaths} / ${player_stats.stats.assists}`;
-            summary.appendChild(game_result);
-
-            const game_date = document.createElement("span");
-            game_date.className = "match-date";
-            game_date.textContent = time.toLocaleDateString();
-            summary.appendChild(game_date);
-
-            const p = document.createElement("p");
-            p.innerHTML = "test";
-
-            details.appendChild(summary);
-            details.appendChild(p);
-            matchesDiv?.appendChild(details);
+            matchesDiv!.appendChild(
+                <details className={result}>
+                    <summary>
+                        <img src={square_url} className="champion-icon" width="48"></img>
+                        <span>{kda_string}</span>
+                        <span className="match-date">{time.toLocaleDateString()}</span>
+                    </summary>
+                    <p>test</p>
+                </details>
+            );
         });
         if (match_list.length != 0) {
-            const fetchMoreMatchesButton = document.createElement("button");
-            fetchMoreMatchesButton.id = "fetch-matches";
-            fetchMoreMatchesButton.textContent = "Load more...";
-            fetchMoreMatchesButton.addEventListener("click", fetchMoreMatchesListener(offset));
+            const fetchMoreMatchesButton = <button id="fetch-matches">Load more...</button>;
+            fetchMoreMatchesButton.addEventListener("click", fetchMoreMatchesListener(offset + 20));
             matchesDiv?.appendChild(fetchMoreMatchesButton);
         }
     }
@@ -453,4 +423,36 @@ interface Champion {
         attackspeedperlevel: number;
         attackspeed: number;
     }
+}
+
+function nonNull(val, fallback) { return Boolean(val) ? val : fallback };
+
+function DOMparseChildren(children) {
+    return children.map(child => {
+        if (typeof child === 'string') {
+            return document.createTextNode(child);
+        }
+        return child;
+    })
+}
+
+function DOMparseNode(element, properties, children) {
+    const el = document.createElement(element);
+    Object.keys(nonNull(properties, {})).forEach(key => {
+        el[key] = properties[key];
+    })
+    DOMparseChildren(children).forEach(child => {
+        el.appendChild(child);
+    });
+    return el;
+}
+
+function DOMcreateElement(element, properties, ...children) {
+    if (typeof element === 'function') {
+        return element({
+            ...nonNull(properties, {}),
+            children
+        });
+    }
+    return DOMparseNode(element, properties, children);
 }
