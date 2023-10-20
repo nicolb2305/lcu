@@ -113,44 +113,58 @@ function constructMatchHistory(offset: number) {
             });
             const result = playerStats.stats.win ? "win" : "loss";
             const squareUrl = `https://cdn.communitydragon.org/latest/champion/${playerStats.championId}/square`;
-            const kda_string = `${playerStats.stats.kills} / ${playerStats.stats.deaths} / ${playerStats.stats.assists}`;
+            const kdaString = `${playerStats.stats.kills} / ${playerStats.stats.deaths} / ${playerStats.stats.assists}`;
 
-            const summonersContainer: HTMLDivElement = <div className="summoners"></div>;
-            const participants = match.participantIdentities.map((e, i) => [e, match.participants[i]]);
-            [0, 5, 1, 6, 2, 7, 3, 8, 4, 9].forEach((i) => {
-                const pi = participants[i][0] as LolMatchHistoryMatchHistoryParticipantIdentities;
-                const p = participants[i][1] as LolMatchHistoryMatchHistoryParticipant;
+            const highestDamage = Math.max(...match.participants.map((val) => val.stats.totalDamageDealtToChampions));
+
+            const team1Container: HTMLDivElement = <div className="team1"></div>;
+            const team2Container: HTMLDivElement = <div className="team2"></div>;
+            match.participantIdentities.map((e, i) => [e, match.participants[i]]).forEach((e, i) => {
+                const pi = e[0] as LolMatchHistoryMatchHistoryParticipantIdentities;
+                const p = e[1] as LolMatchHistoryMatchHistoryParticipant;
 
                 const squareUrl = `https://cdn.communitydragon.org/latest/champion/${p.championId}/square`;
                 var summonerName = (
-                    <span onclick={changeSelect(pi.player.summonerId)}>
-                        {`${pi.player.summonerName} (${p.stats.kills}/${p.stats.deaths}/${p.stats.assists})`}
-                    </span>
+                    <a href="#" onclick={changeSelect(pi.player.summonerId)}>
+                        {`${pi.player.summonerName}`}
+                    </a>
                 );
                 if (pi.player.summonerId.toString() === summonerId) {
                     summonerName = <span><b>{pi.player.summonerName}</b></span>;
                 }
-                summonersContainer.appendChild(
+                const summonerContainer = (
                     <div>
-                        <img className="champion-icon" src={squareUrl} width="32"></img>
+                        <img className="match-summoners-icon" src={squareUrl} width="32"></img>
                         {summonerName}
+                        <span>{` (${p.stats.kills}/${p.stats.deaths}/${p.stats.assists})`}</span><br />
+                        <meter className="damage-meter" value={p.stats.totalDamageDealtToChampions} min="0" max={highestDamage}></meter>
+                        <span className="damage-text">{` ${p.stats.totalDamageDealtToChampions.toLocaleString()} damage`}</span>
                     </div>
                 );
+
+                if (i < 5) {
+                    team1Container.appendChild(summonerContainer);
+                } else {
+                    team2Container.appendChild(summonerContainer);
+                }
             });
 
             matchesDiv!.appendChild(
                 <details className={result}>
                     <summary>
                         <img src={squareUrl} className="champion-icon" width="48"></img>
-                        <span>{kda_string}</span>
+                        <span>{kdaString}</span>
                         <span className="match-date">{time.toLocaleDateString()}</span>
                     </summary>
-                    {summonersContainer}
+                    <div className="summoners">
+                        {team1Container}
+                        {team2Container}
+                    </div>
                 </details>
             );
         });
         if (match_list.length != 0) {
-            const fetchMoreMatchesButton = <button id="fetch-matches">Load more...</button>;
+            const fetchMoreMatchesButton = <button id="fetch-matches" type="button">Load more...</button>;
             fetchMoreMatchesButton.addEventListener("click", fetchMoreMatchesListener(offset + 20));
             matchesDiv?.appendChild(fetchMoreMatchesButton);
         }

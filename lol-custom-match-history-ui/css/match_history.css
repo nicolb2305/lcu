@@ -51,3 +51,16 @@ select {
     display: grid;
     grid-template-columns: 50% 50%;
 }
+
+.match-summoners-icon {
+    vertical-align: middle;
+    margin: 0.2rem;
+}
+
+.damage-text {
+    font-size: 16px;
+}
+
+.damage-meter {
+    vertical-align: middle;
+}
