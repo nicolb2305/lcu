@@ -1,0 +1,9 @@
+#stats {
+    display: grid;
+    grid-template-columns: 50% 50%;
+    grid-gap: 1rem;
+}
+
+summary {
+    font-size: 32px;
+}

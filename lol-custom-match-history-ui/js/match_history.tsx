@@ -36,48 +36,63 @@ function summonerSelectListener() {
         getSummonerGames(summonerId)
             .then(constructMatchHistory(0));
 
+        const percentConfig = {
+            style: 'percent',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 1
+        };
+
         getSummonerStats(summonerId).then((stats) => {
-            stats
-                .sort((a, b) => (b.wins + b.losses) - (a.wins + a.losses))
-                .forEach((val) => {
-                    const square_url = `https://cdn.communitydragon.org/latest/champion/${val.championId}/square`;
-                    const games = val.wins + val.losses;
-                    const winrate = Math.round((val.wins / games) * 100);
-                    const winrate_formatted = (val.wins / games)
-                        .toLocaleString(undefined, {
-                            style: 'percent',
-                            minimumFractionDigits: 0,
-                            maximumFractionDigits: 1
+            fetch(`https://api.påsan.com/summoner/${summonerId}`)
+                .then((res) => res.json())
+                .then((summoner: GamesPlayed) => {
+                    stats
+                        .sort((a, b) => (b.wins + b.losses) - (a.wins + a.losses))
+                        .forEach((val) => {
+                            const square_url = `https://cdn.communitydragon.org/latest/champion/${val.championId}/square`;
+                            const games = val.wins + val.losses;
+                            const pickrate_formatted = (games / summoner.games).toLocaleString(undefined, percentConfig);
+                            const banrate_formatted = (val.bans / summoner.games).toLocaleString(undefined, percentConfig);
+                            const winrate = Math.round((val.wins / games) * 100);
+                            const winrate_formatted = (val.wins / games).toLocaleString(undefined, percentConfig);
+                            const gamesText = games != 1 ? "games" : "game";
+                            const winsText = val.wins != 1 ? "wins" : "win";
+                            const lossesText = val.losses != 1 ? "losses" : "loss";
+                            const bansText = val.bans != 1 ? "bans" : "ban";
+
+                            const format_opts = {
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 1
+                            };
+                            const kills = (val.kills / games)
+                                .toLocaleString(undefined, format_opts);
+                            const deaths = (val.deaths / games)
+                                .toLocaleString(undefined, format_opts);
+                            const assists = (val.assists / games)
+                                .toLocaleString(undefined, format_opts);
+
+                            var kda: string;
+                            if (val.deaths === 0) {
+                                kda = "Perfect";
+                            } else {
+                                kda = ((val.kills + val.assists) / val.deaths)
+                                    .toLocaleString(undefined, format_opts);
+                            }
+
+                            sidebar.appendChild(
+                                <article className="champion-stat" style={`--winrate: ${winrate}`}>
+                                    <img className="stats-icon" width="48" src={square_url}></img>
+                                    <div className="stats">
+                                        {`Winrate: ${winrate_formatted} (${val.wins} ${winsText} / ${val.losses} ${lossesText})`}<br />
+                                        {`Pickrate: ${pickrate_formatted} (${games} ${gamesText})`}<br />
+                                        {`Banrate: ${banrate_formatted} (${val.bans} ${bansText})`}
+                                    </div>
+                                    <div>{`${kills} / ${deaths} / ${assists} (${kda} KDA)`}</div>
+                                </article>
+                            );
                         });
-                    const gamesText = games != 1 ? "games" : "game";
 
-                    const format_opts = {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 1
-                    };
-                    const kills = (val.kills / games)
-                        .toLocaleString(undefined, format_opts);
-                    const deaths = (val.deaths / games)
-                        .toLocaleString(undefined, format_opts);
-                    const assists = (val.assists / games)
-                        .toLocaleString(undefined, format_opts);
-
-                    var kda: string;
-                    if (val.deaths === 0) {
-                        kda = "Perfect";
-                    } else {
-                        kda = ((val.kills + val.assists) / val.deaths)
-                            .toLocaleString(undefined, format_opts);
-                    }
-
-                    sidebar.appendChild(
-                        <article className="champion-stat" style={`--winrate: ${winrate}`}>
-                            <img className="stats-icon" width="48" src={square_url}></img>
-                            <div className="stats">{`${winrate_formatted} (${games} ${gamesText})`}</div>
-                            <div>{`${kills} / ${deaths} / ${assists} (${kda} KDA)`}</div>
-                        </article>
-                    );
-                });
+                })
         })
 
     }
@@ -198,11 +213,13 @@ async function getSummonerStats(
 
 interface ChampionStats {
     championId: number,
+    summonerId: number,
     wins: number,
     losses: number,
     kills: number,
     deaths: number,
     assists: number,
+    bans: number,
 }
 
 
@@ -276,6 +293,8 @@ interface GamesPlayed {
     summonerId: number;
     summonerName: string;
     games: number;
+    winrate: number,
+    champs: number,
 }
 
 interface LolMatchHistoryMatchHistoryParticipantStatistics {
@@ -466,36 +485,4 @@ interface Champion {
         attackspeedperlevel: number;
         attackspeed: number;
     }
-}
-
-function nonNull(val, fallback) { return Boolean(val) ? val : fallback };
-
-function DOMparseChildren(children) {
-    return children.map(child => {
-        if (typeof child === 'string') {
-            return document.createTextNode(child);
-        }
-        return child;
-    })
-}
-
-function DOMparseNode(element, properties, children) {
-    const el = document.createElement(element);
-    Object.keys(nonNull(properties, {})).forEach(key => {
-        el[key] = properties[key];
-    })
-    DOMparseChildren(children).forEach(child => {
-        el.appendChild(child);
-    });
-    return el;
-}
-
-function DOMcreateElement(element, properties, ...children) {
-    if (typeof element === 'function') {
-        return element({
-            ...nonNull(properties, {}),
-            children
-        });
-    }
-    return DOMparseNode(element, properties, children);
 }
