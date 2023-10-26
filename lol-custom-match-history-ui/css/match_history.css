@@ -13,7 +13,6 @@
 }
 
 .stats-icon {
-    float: left;
     margin-right: 1rem;
 }
 
@@ -22,7 +21,9 @@ select {
 }
 
 .stats {
-    display: inline-block;
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
 }
 
 #sidebar {

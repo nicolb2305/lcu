@@ -81,13 +81,15 @@ function summonerSelectListener() {
 
                             sidebar.appendChild(
                                 <article className="champion-stat" style={`--winrate: ${winrate}`}>
-                                    <img className="stats-icon" width="48" src={square_url}></img>
                                     <div className="stats">
-                                        {`Winrate: ${winrate_formatted} (${val.wins} ${winsText} / ${val.losses} ${lossesText})`}<br />
-                                        {`Pickrate: ${pickrate_formatted} (${games} ${gamesText})`}<br />
-                                        {`Banrate: ${banrate_formatted} (${val.bans} ${bansText})`}
+                                        <img className="stats-icon" width="48" src={square_url}></img>
+                                        <div>{`${kills} / ${deaths} / ${assists} (${kda} KDA)`}</div>
                                     </div>
-                                    <div>{`${kills} / ${deaths} / ${assists} (${kda} KDA)`}</div>
+                                    <span>
+                                        {`Pickrate: ${pickrate_formatted} (${games} ${gamesText})`}<br />
+                                        {`Winrate: ${winrate_formatted} (${val.wins} ${winsText} / ${val.losses} ${lossesText})`}<br />
+                                        {`Banrate: ${banrate_formatted} (${val.bans} ${bansText})`}
+                                    </span>
                                 </article>
                             );
                         });
