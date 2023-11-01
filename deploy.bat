@@ -1,5 +1,6 @@
 call tsc
 call scp -P 1984 .\lol-custom-match-history-ui\js\react.js nico@xn--psan-qoa.com:~/static/js/react.js
+call scp -P 1984 .\lol-custom-match-history-ui\css\simple.css nico@xn--psan-qoa.com:~/static/css/simple.css
 
 call scp -P 1984 .\lol-custom-match-history-ui\js\match_history.js nico@xn--psan-qoa.com:~/static/js/match_history.js
 call scp -P 1984 .\lol-custom-match-history-ui\css\match_history.css nico@xn--psan-qoa.com:~/static/css/match_history.css

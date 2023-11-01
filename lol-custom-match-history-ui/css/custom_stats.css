@@ -1,7 +1,9 @@
-#stats {
-    display: grid;
-    grid-template-columns: 50% 50%;
-    grid-gap: 1rem;
+@media screen and (min-width: 820px) {
+    #stats {
+        display: grid;
+        grid-template-columns: 50% 50%;
+        grid-gap: 1rem;
+    }
 }
 
 summary {
