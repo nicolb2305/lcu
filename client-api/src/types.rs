@@ -425,7 +425,7 @@ pub struct LolMatchHistoryMatchHistoryGame {
     pub game_duration: u32,
     pub queue_id: i32,
     pub map_id: u32,
-    pub season_id: u32,
+    pub season_id: Option<u32>,
     pub game_version: String,
     pub game_mode: String,
     pub game_type: String,
