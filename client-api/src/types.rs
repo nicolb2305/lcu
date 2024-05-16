@@ -621,3 +621,26 @@ pub struct LolMatchHistoryMatchHistoryParticipantIdentityPlayer {
     pub match_history_uri: String,
     pub profile_icon: i32,
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LolLobbyGameModeDto {
+    pub game_type: String,
+    pub max_team_size: i32,
+    pub max_party_size: i32,
+    pub bot_difficulty: Option<String>,
+    pub queue_id: Option<i32>,
+    pub game_customization: Option<HashMap<String, String>>,
+    pub customs_settings: Option<LolLobbyCustomGameSettingsDto>,
+    pub game_type_config_id: Option<i64>,
+    pub map_id: Option<i32>,
+    pub allow_spectators: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LolLobbyCustomGameSettingsDto {
+    pub lobby_name: String,
+    pub lobby_password: String,
+    pub game_id: u64,
+}

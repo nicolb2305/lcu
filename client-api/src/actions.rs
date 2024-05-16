@@ -12,6 +12,22 @@ use futures::future::try_join_all;
 use itertools::Itertools;
 use rand::prelude::*;
 
+enum Queues {
+    Arena,
+    Arena16,
+    Other,
+}
+
+impl From<i32> for Queues {
+    fn from(value: i32) -> Self {
+        match value {
+            1700 => Self::Arena,
+            1710 => Self::Arena16,
+            _ => Self::Other,
+        }
+    }
+}
+
 /// Gets all players in the current lobby, generates two random teams and posts them
 /// in the lobby chat.
 ///
@@ -20,18 +36,39 @@ use rand::prelude::*;
 pub async fn randomize_teams(client: &Client) -> Result<(), Error> {
     // Create teams
     let lobby = client.get_lol_lobby_v2_lobby().await?;
+
+    let gamemode: Queues = client
+        .get_lol_lobby_v1_parties_gamemode()
+        .await?
+        .queue_id
+        .ok_or(Error::QueueNotFoundError)?
+        .into();
+
     let mut players: Vec<&str> = lobby
         .members
         .iter()
         .map(|p| p.summoner_name.as_ref())
         .collect();
+
     players.shuffle(&mut thread_rng());
-    let (team1, team2) = players
-        .chunks((players.len() / 2) + (players.len() % 2))
-        .map(|x| x.join("\n"))
-        .collect_tuple()
-        .ok_or(Error::TeamCreation)?;
-    let teams_output = format!(".\nTeam 1:\n{team1}\n----------\nTeam 2:\n{team2}");
+
+    // Intentionally ignores all future queues
+    #[allow(clippy::match_wildcard_for_single_variants)]
+    let team_size = match gamemode {
+        Queues::Arena | Queues::Arena16 => 2,
+        _ => players.len() / 2,
+    };
+
+    #[allow(unstable_name_collisions)]
+    let teams_output: String = std::iter::once(".\n".to_owned())
+        .chain(
+            players
+                .chunks(team_size)
+                .enumerate()
+                .map(|(i, team)| format!("Team {}:\n{}", i + 1, team.join("\n")))
+                .intersperse("\n----------\n".into()),
+        )
+        .collect();
 
     // Find custom game chat
     let conversations = client.get_lol_chat_v1_conversations().await?;

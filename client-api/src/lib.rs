@@ -41,6 +41,8 @@ pub enum Error {
     LobbyNotFound,
     #[error("No games in match history")]
     NoGamesInMatchHistory,
+    #[error("No queue found for current lobby")]
+    QueueNotFoundError,
 }
 
 #[cfg(test)]

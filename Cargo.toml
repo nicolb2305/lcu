@@ -1,11 +1,5 @@
 [workspace]
-members = [
-    "custom-game-randomizer",
-    "client-api",
-    "custom-game-creator",
-    "lol-utilities",
-    "lol-custom-match-history-yew",
-]
+members = ["client-api", "lol-utilities"]
 resolver = "2"
 
 [profile.release]

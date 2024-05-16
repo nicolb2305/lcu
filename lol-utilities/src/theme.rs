@@ -10,17 +10,17 @@ use iced::{
 };
 
 #[derive(Debug, Clone, Copy, Default)]
-pub(crate) struct Theme;
+pub struct Theme;
 
 #[derive(Debug, Clone, Copy, Default)]
-pub(crate) enum Container {
+pub enum Container {
     #[default]
     Default,
     Bordered,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
-pub(crate) enum Button {
+pub enum Button {
     #[default]
     Primary,
     Secondary,

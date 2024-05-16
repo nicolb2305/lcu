@@ -2,8 +2,9 @@ use crate::{
     client::Client,
     types::{
         LolChatConversationMessageResource, LolChatConversationResource, LolChatFriendResource,
-        LolLobbyLobbyChangeGameDto, LolLobbyLobbyDto, LolLobbyLobbyInvitationDto,
-        LolMatchHistoryMatchHistoryGame, LolMatchHistoryMatchHistoryList,
+        LolLobbyGameModeDto, LolLobbyLobbyChangeGameDto, LolLobbyLobbyDto,
+        LolLobbyLobbyInvitationDto, LolMatchHistoryMatchHistoryGame,
+        LolMatchHistoryMatchHistoryList,
     },
     Error,
 };
@@ -74,5 +75,12 @@ impl Client {
             &None::<()>,
         )
         .await
+    }
+
+    pub(crate) async fn get_lol_lobby_v1_parties_gamemode(
+        &self,
+    ) -> Result<LolLobbyGameModeDto, Error> {
+        self.get("/lol-lobby/v1/parties/gamemode", &None::<()>)
+            .await
     }
 }

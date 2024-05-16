@@ -93,7 +93,7 @@ impl Application for App {
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
         (
-            App { inner: None },
+            Self { inner: None },
             Command::perform(async { create_inner_app() }, check_client_connection),
         )
     }
@@ -238,8 +238,16 @@ impl Application for App {
 
     fn view(&self) -> Element<'_, Self::Message> {
         #[allow(clippy::single_match_else)]
-        let content: Element<'_, _> = match self.inner.as_ref() {
-            Some(inner) => {
+        let content: Element<'_, _> = self.inner.as_ref().map_or_else(
+            || {
+                column!(
+                    text("Client not found"),
+                    button("Connect to client").on_press(Message::AttemptConnection),
+                )
+                .spacing(SPACING)
+                .into()
+            },
+            |inner| {
                 let create_lobby_column = column!(
                     button("Create lobby!")
                         .on_press(Message::CreateTournamentDraftLobby)
@@ -317,14 +325,8 @@ impl Application for App {
                 )
                 .spacing(SPACING)
                 .into()
-            }
-            None => column!(
-                text("Client not found"),
-                button("Connect to client").on_press(Message::AttemptConnection),
-            )
-            .spacing(SPACING)
-            .into(),
-        };
+            },
+        );
 
         Container::new(content)
             .style(theme::Container::Bordered)

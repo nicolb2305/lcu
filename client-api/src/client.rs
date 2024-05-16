@@ -39,7 +39,7 @@ impl Client {
         let mut base_url = Url::parse("https://127.0.0.1")?;
         base_url
             .set_port(Some(port))
-            .map_err(|_| Error::InvalidPort(port))?;
+            .map_err(|()| Error::InvalidPort(port))?;
 
         let auth_token = cmd_args
             .split(' ')
@@ -60,10 +60,10 @@ impl Client {
             .default_headers(headers)
             .build()?;
 
-        Ok(Client { base_url, client })
+        Ok(Self { base_url, client })
     }
 
-    pub(crate) async fn get<T: for<'a> Deserialize<'a>, U: Serialize + ?Sized>(
+    pub(crate) async fn get<T: for<'a> Deserialize<'a>, U: Serialize + Sync + ?Sized>(
         &self,
         endpoint: &str,
         query: &U,
@@ -80,7 +80,7 @@ impl Client {
             .into()
     }
 
-    pub(crate) async fn post<T: for<'a> Deserialize<'a>, R: Serialize>(
+    pub(crate) async fn post<T: for<'a> Deserialize<'a>, R: Serialize + Sync>(
         &self,
         endpoint: &str,
         body: &Option<R>,
