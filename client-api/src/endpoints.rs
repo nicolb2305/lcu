@@ -3,7 +3,7 @@ use crate::{
     types::{
         LolChatConversationMessageResource, LolChatConversationResource, LolChatFriendResource,
         LolLobbyGameModeDto, LolLobbyLobbyChangeGameDto, LolLobbyLobbyDto,
-        LolLobbyLobbyInvitationDto, LolMatchHistoryMatchHistoryGame,
+        LolLobbyLobbyInvitationDto, LolLobbySubteamDataDto, LolMatchHistoryMatchHistoryGame,
         LolMatchHistoryMatchHistoryList,
     },
     Error,
@@ -81,6 +81,14 @@ impl Client {
         &self,
     ) -> Result<LolLobbyGameModeDto, Error> {
         self.get("/lol-lobby/v1/parties/gamemode", &None::<()>)
+            .await
+    }
+
+    pub(crate) async fn put_lol_lobby_v2_lobby_subteam_data(
+        &self,
+        subteam_data: &LolLobbySubteamDataDto,
+    ) -> Result<(), Error> {
+        self.put_empty_response("/lol-lobby/v2/lobby/subteamData", subteam_data)
             .await
     }
 }

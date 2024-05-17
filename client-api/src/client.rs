@@ -7,7 +7,7 @@ use reqwest::{
 };
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
-use sysinfo::{ProcessExt, System, SystemExt};
+use sysinfo::System;
 
 #[derive(Debug, Clone)]
 pub struct Client {
@@ -68,6 +68,7 @@ impl Client {
         endpoint: &str,
         query: &U,
     ) -> Result<T, Error> {
+        log::info!("GET {endpoint}");
         let mut url = self.base_url.clone();
         url.set_path(endpoint);
         self.client
@@ -85,6 +86,7 @@ impl Client {
         endpoint: &str,
         body: &Option<R>,
     ) -> Result<T, Error> {
+        log::info!("POST {endpoint}");
         let mut url = self.base_url.clone();
         url.set_path(endpoint);
         self.client
@@ -95,5 +97,17 @@ impl Client {
             .json::<ApiResult<T>>()
             .await?
             .into()
+    }
+
+    pub(crate) async fn put_empty_response<R: Serialize + Sync>(
+        &self,
+        endpoint: &str,
+        body: &R,
+    ) -> Result<(), Error> {
+        log::info!("PUT {endpoint}");
+        let mut url = self.base_url.clone();
+        url.set_path(endpoint);
+        self.client.put(url).json(body).send().await?;
+        Ok(())
     }
 }

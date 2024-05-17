@@ -43,17 +43,33 @@ pub enum Error {
     NoGamesInMatchHistory,
     #[error("No queue found for current lobby")]
     QueueNotFoundError,
+    #[error("Wrong gamemode")]
+    WrongGameMode,
+    #[error("Could not move player to given location")]
+    PlayerMove,
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{client::Client, Error};
+    use crate::{client::Client, types::LolLobbySubteamDataDto, Error};
 
     #[tokio::test]
     async fn get_lobby() -> Result<(), Error> {
         let client = Client::new()?;
         let lobby = client.get_lol_lobby_v2_lobby().await?;
         dbg!(lobby);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn put_subteam() -> Result<(), Error> {
+        let client = Client::new()?;
+        client
+            .put_lol_lobby_v2_lobby_subteam_data(&LolLobbySubteamDataDto {
+                subteam_index: 1,
+                intra_subteam_position: 2,
+            })
+            .await?;
         Ok(())
     }
 }

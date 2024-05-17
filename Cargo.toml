@@ -1,5 +1,10 @@
 [workspace]
-members = ["client-api", "lol-utilities"]
+members = [
+    "client-api",
+    "lol-utilities",
+    "custom-game-creator",
+    "custom-game-randomizer",
+]
 resolver = "2"
 
 [profile.release]

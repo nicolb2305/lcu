@@ -58,7 +58,7 @@ pub struct LolLobbyLobbyDto {
 }
 
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[derive(Deserialize, Serialize, Debug, Clone, Default, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct LolLobbyLobbyParticipantDto {
     pub summoner_id: u64,
@@ -87,9 +87,11 @@ pub struct LolLobbyLobbyParticipantDto {
     pub bot_id: String,
     pub bot_difficulty: LolLobbyLobbyBotDifficulty,
     pub bot_champion_id: i32,
+    pub subteam_index: Option<usize>,
+    pub intra_subteam_position: Option<usize>,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[derive(Deserialize, Serialize, Debug, Clone, Default, PartialEq, Eq)]
 pub enum LolLobbyLobbyBotDifficulty {
     #[default]
     #[serde(rename = "NONE")]
@@ -193,6 +195,7 @@ pub enum LolLobbyEligibilityRestrictionCode {
     InventoryChampsInfoNotAvailable = 34,
     InventoryQueuesInfoNotAvailable = 35,
     MmrStandardDeviationTooLarge = 36,
+    TooManyIncompleteSubteamsRestriction,
 }
 
 #[allow(clippy::struct_excessive_bools)]
@@ -643,4 +646,11 @@ pub struct LolLobbyCustomGameSettingsDto {
     pub lobby_name: String,
     pub lobby_password: String,
     pub game_id: u64,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default, PartialEq, Eq, Copy)]
+#[serde(rename_all = "camelCase")]
+pub struct LolLobbySubteamDataDto {
+    pub subteam_index: usize,
+    pub intra_subteam_position: usize,
 }
