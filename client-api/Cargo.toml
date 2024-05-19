@@ -17,6 +17,7 @@ serde_json = "1.0.107"
 sysinfo = "0.30.12"
 thiserror = "1.0.49"
 url = "2.4.1"
+async-std = { version = "1", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.32.0", features = [
@@ -30,4 +31,4 @@ default = ["actions"]
 types = []
 client = ["types", "dep:reqwest"]
 endpoints = ["client"]
-actions = ["endpoints"]
+actions = ["endpoints", "dep:async-std"]

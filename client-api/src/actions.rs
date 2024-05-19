@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::{
     client::Client,
     types::{
@@ -9,6 +11,7 @@ use crate::{
     },
     Error,
 };
+use async_std::task::sleep;
 use futures::future::try_join_all;
 use itertools::Itertools;
 use rand::prelude::*;
@@ -209,6 +212,7 @@ impl<'a> ArenaTeam<'a> {
         let new_local_pos = Self::pos_to_index(pos);
         self.players.swap(self.local_player, new_local_pos);
         self.local_player = new_local_pos;
+        sleep(Duration::from_millis(500)).await;
         Ok(())
     }
 }
