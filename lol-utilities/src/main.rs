@@ -38,8 +38,8 @@ fn main() -> Result<()> {
             resizable: true,
             decorations: true,
             icon: Some(icon::from_file_data(
-                include_bytes!(r"../NeekoSquare.png"),
-                Some(ImageFormat::Png),
+                include_bytes!(r"../NeekoSquare.ico"),
+                Some(ImageFormat::Ico),
             )?),
             ..Default::default()
         },
