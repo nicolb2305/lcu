@@ -1930,6 +1930,7 @@ dependencies = [
  "client-api",
  "eyre",
  "tokio",
+ "winres",
 ]
 
 [[package]]
