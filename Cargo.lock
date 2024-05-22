@@ -1934,7 +1934,7 @@ dependencies = [
 
 [[package]]
 name = "lol-utilities"
-version = "0.1.12"
+version = "0.1.13"
 dependencies = [
  "client-api",
  "env_logger",

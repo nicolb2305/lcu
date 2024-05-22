@@ -1,17 +1,13 @@
-use std::time::Duration;
-
 use crate::{
     client::Client,
     types::{
         LolChatConversationMessageResource, LolChatFriendResource, LolLobbyLobbyChangeGameDto,
         LolLobbyLobbyCustomGameConfiguration, LolLobbyLobbyCustomGameLobby,
-        LolLobbyLobbyInvitationDto, LolLobbyLobbyParticipantDto,
-        LolLobbyQueueCustomGameSpectatorPolicy, LolLobbyQueueGameTypeConfig,
-        LolLobbySubteamDataDto,
+        LolLobbyLobbyInvitationDto, LolLobbyQueueCustomGameSpectatorPolicy,
+        LolLobbyQueueGameTypeConfig,
     },
     Error,
 };
-use async_std::task::sleep;
 use futures::future::try_join_all;
 use itertools::Itertools;
 use rand::prelude::*;
@@ -32,6 +28,18 @@ impl From<i32> for Queues {
     }
 }
 
+pub enum DraftType {
+    BlindPick = 1,
+    Draft = 2,
+    AllRandom = 4,
+    TorunamentDraft = 6,
+}
+
+pub enum Map {
+    SummonersRift = 11,
+    HowlingAbyss = 12,
+}
+
 /// Gets all players in the current lobby, generates two random teams and posts them
 /// in the lobby chat.
 ///
@@ -40,8 +48,6 @@ impl From<i32> for Queues {
 pub async fn randomize_teams(client: &Client) -> Result<(), Error> {
     // Create teams
     let lobby = client.get_lol_lobby_v2_lobby().await?;
-
-    dbg!(&lobby);
 
     let gamemode: Queues = client
         .get_lol_lobby_v1_parties_gamemode()
@@ -52,11 +58,7 @@ pub async fn randomize_teams(client: &Client) -> Result<(), Error> {
 
     let mut players: Vec<_> = lobby.members.iter().collect();
 
-    dbg!(&players);
-
     players.shuffle(&mut thread_rng());
-
-    dbg!(&players);
 
     // Intentionally ignores all future queues
     #[allow(clippy::match_wildcard_for_single_variants)]
@@ -101,169 +103,10 @@ pub async fn randomize_teams(client: &Client) -> Result<(), Error> {
 
     // Move players if gamemode is arena
     if matches!(gamemode, Queues::Arena | Queues::Arena16) {
-        move_team_members_arena(client, &lobby.local_member, &teams).await?;
+        arena::move_team_members(client, &lobby.local_member, &teams).await?;
     }
 
     Ok(())
-}
-
-struct ArenaTeam<'a> {
-    client: &'a Client,
-    local_player: usize,
-    players: [Option<LolLobbySubteamDataDto>; 16],
-}
-
-impl<'a> ArenaTeam<'a> {
-    fn from_player_list(
-        client: &'a Client,
-        local_member: &LolLobbyLobbyParticipantDto,
-        teams: &[&[&LolLobbyLobbyParticipantDto]],
-    ) -> Self {
-        // Create array of current teams and current position of local player
-        let mut current_teams = [None; 16];
-        let mut current_local_member = None;
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        for (subteam_index, team) in teams.iter().enumerate() {
-            for (intra_subteam_position, player) in team.iter().enumerate() {
-                if *player == local_member {
-                    current_local_member = Some(Self::pos_to_index(LolLobbySubteamDataDto {
-                        subteam_index: player.subteam_index.unwrap(),
-                        intra_subteam_position: player.intra_subteam_position.unwrap(),
-                    }));
-                }
-                current_teams[Self::pos_to_index(LolLobbySubteamDataDto {
-                    subteam_index: player.subteam_index.unwrap(),
-                    intra_subteam_position: player.intra_subteam_position.unwrap(),
-                })] = Some(LolLobbySubteamDataDto {
-                    subteam_index: subteam_index + 1,
-                    intra_subteam_position: intra_subteam_position + 1,
-                });
-            }
-        }
-        Self {
-            client,
-            local_player: current_local_member.unwrap(),
-            players: current_teams,
-        }
-    }
-
-    const fn pos_to_index(pos: LolLobbySubteamDataDto) -> usize {
-        (pos.subteam_index - 1) * 2 + (pos.intra_subteam_position - 1)
-    }
-
-    const fn index_to_pos(idx: usize) -> LolLobbySubteamDataDto {
-        LolLobbySubteamDataDto {
-            subteam_index: (idx / 2) + 1,
-            intra_subteam_position: (idx % 2) + 1,
-        }
-    }
-
-    fn get_first_player_in_incorrect_position(&self) -> Option<LolLobbySubteamDataDto> {
-        self.players.iter().enumerate().find_map(|(idx, player)| {
-            player
-                .map(|pos| idx != Self::pos_to_index(pos))
-                .unwrap_or(false)
-                .then(|| Self::index_to_pos(idx))
-        })
-    }
-
-    fn all_positions_correct(&self) -> bool {
-        self.players.iter().enumerate().all(|(idx, player)| {
-            player
-                .map(|pos| idx == Self::pos_to_index(pos))
-                .unwrap_or(true)
-        })
-    }
-
-    const fn local_player_pos(&self) -> LolLobbySubteamDataDto {
-        Self::index_to_pos(self.local_player)
-    }
-
-    fn local_player_correct_pos(&self) -> bool {
-        self.players[self.local_player] == Some(Self::index_to_pos(self.local_player))
-    }
-
-    // fn get_final_position_for_player_at_given_position(
-    //     &self,
-    //     pos: LolLobbySubteamDataDto,
-    // ) -> Option<LolLobbySubteamDataDto> {
-    //     self.players[Self::pos_to_index(pos)]
-    // }
-
-    fn get_current_position_for_player_with_given_final_position(
-        &self,
-        pos: LolLobbySubteamDataDto,
-    ) -> Option<LolLobbySubteamDataDto> {
-        for (idx, player) in self.players.iter().enumerate() {
-            if let Some(player) = player {
-                if *player == pos {
-                    return Some(Self::index_to_pos(idx));
-                }
-            }
-        }
-        None
-    }
-
-    async fn swap_local_to_pos(&mut self, pos: LolLobbySubteamDataDto) -> Result<(), Error> {
-        log::info!("Swapping local player to {pos:?}");
-        self.client
-            .put_lol_lobby_v2_lobby_subteam_data(&pos)
-            .await?;
-        let new_local_pos = Self::pos_to_index(pos);
-        self.players.swap(self.local_player, new_local_pos);
-        self.local_player = new_local_pos;
-        sleep(Duration::from_millis(500)).await;
-        Ok(())
-    }
-}
-
-async fn move_team_members_arena(
-    client: &Client,
-    local_member: &LolLobbyLobbyParticipantDto,
-    teams: &[&[&LolLobbyLobbyParticipantDto]],
-) -> Result<(), Error> {
-    let mut arena_teams = ArenaTeam::from_player_list(client, local_member, teams);
-    log::info!(
-        "Initial move of local player to {:?}",
-        ArenaTeam::index_to_pos(0)
-    );
-    arena_teams
-        .swap_local_to_pos(ArenaTeam::index_to_pos(0))
-        .await?;
-    while !arena_teams.all_positions_correct() {
-        log::info!("At least one player in incorrect position");
-        if arena_teams.local_player_correct_pos() {
-            let next_pos = arena_teams
-                .get_first_player_in_incorrect_position()
-                .ok_or(Error::PlayerMove)?;
-            log::info!("Local player at correct position, moving to {next_pos:?}");
-            arena_teams.swap_local_to_pos(next_pos).await?;
-            continue;
-        }
-
-        let next_pos = arena_teams
-            .get_current_position_for_player_with_given_final_position(
-                arena_teams.local_player_pos(),
-            )
-            .ok_or(Error::PlayerMove)?;
-        log::info!(
-            "Moving other player to local player's current position, moving to {next_pos:?}"
-        );
-        arena_teams.swap_local_to_pos(next_pos).await?;
-    }
-    Ok(())
-}
-
-pub enum DraftType {
-    BlindPick = 1,
-    Draft = 2,
-    AllRandom = 4,
-    TorunamentDraft = 6,
-}
-
-pub enum Map {
-    SummonersRift = 11,
-    HowlingAbyss = 12,
 }
 
 /// Creates a custom game with tournament draft on Summoner's Rift.
@@ -421,4 +264,133 @@ pub async fn invite_from_previous(client: &Client) -> Result<(), Error> {
     invite_to_lobby(client, &summoners).await?;
 
     Ok(())
+}
+
+mod arena {
+    use std::time::Duration;
+
+    use async_std::task::sleep;
+
+    use crate::{
+        client::Client,
+        types::{LolLobbyLobbyParticipantDto, LolLobbySubteamDataDto},
+        Error,
+    };
+
+    struct ArenaTeam<'a> {
+        client: &'a Client,
+        local_player: usize,
+        players: [Option<LolLobbySubteamDataDto>; 16],
+        num_players: usize,
+    }
+
+    impl<'a> ArenaTeam<'a> {
+        fn from_player_list(
+            client: &'a Client,
+            local_member: &LolLobbyLobbyParticipantDto,
+            teams: &[&[&LolLobbyLobbyParticipantDto]],
+        ) -> Self {
+            // Create array of current teams and current position of local player
+            let mut num_players = 0;
+            let mut current_teams = [None; 16];
+            let mut current_local_member = None;
+            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            for (subteam_index, team) in teams.iter().enumerate() {
+                for (intra_subteam_position, player) in team.iter().enumerate() {
+                    num_players += 1;
+                    if *player == local_member {
+                        current_local_member = Some(Self::pos_to_index(LolLobbySubteamDataDto {
+                            subteam_index: player.subteam_index.unwrap(),
+                            intra_subteam_position: player.intra_subteam_position.unwrap(),
+                        }));
+                    }
+                    current_teams[Self::pos_to_index(LolLobbySubteamDataDto {
+                        subteam_index: player.subteam_index.unwrap(),
+                        intra_subteam_position: player.intra_subteam_position.unwrap(),
+                    })] = Some(LolLobbySubteamDataDto {
+                        subteam_index: subteam_index + 1,
+                        intra_subteam_position: intra_subteam_position + 1,
+                    });
+                }
+            }
+            Self {
+                client,
+                local_player: current_local_member.unwrap(),
+                players: current_teams,
+                num_players,
+            }
+        }
+
+        const fn pos_to_index(pos: LolLobbySubteamDataDto) -> usize {
+            (pos.subteam_index - 1) * 2 + (pos.intra_subteam_position - 1)
+        }
+
+        const fn index_to_pos(idx: usize) -> LolLobbySubteamDataDto {
+            LolLobbySubteamDataDto {
+                subteam_index: (idx / 2) + 1,
+                intra_subteam_position: (idx % 2) + 1,
+            }
+        }
+
+        fn first_player_in_incorrect_position(&self) -> Option<LolLobbySubteamDataDto> {
+            self.players.iter().enumerate().find_map(|(idx, player)| {
+                player
+                    .map(|pos| idx != Self::pos_to_index(pos))
+                    .unwrap_or(false)
+                    .then(|| Self::index_to_pos(idx))
+            })
+        }
+
+        fn pos_of_player_with_target_at_local_player(&self) -> Option<LolLobbySubteamDataDto> {
+            for (idx, player) in self.players.iter().enumerate() {
+                if let Some(player) = player {
+                    if *player == Self::index_to_pos(self.local_player) && idx != self.local_player
+                    {
+                        return Some(Self::index_to_pos(idx));
+                    }
+                }
+            }
+            None
+        }
+
+        fn open_spot(&self) -> Option<LolLobbySubteamDataDto> {
+            self.players
+                .iter()
+                .enumerate()
+                .take(self.num_players)
+                .find_map(|(idx, player)| player.is_none().then_some(Self::index_to_pos(idx)))
+        }
+
+        async fn swap_local_to_pos(&mut self, pos: LolLobbySubteamDataDto) -> Result<(), Error> {
+            log::info!("{} -> {}", self.local_player, Self::pos_to_index(pos));
+            self.client
+                .put_lol_lobby_v2_lobby_subteam_data(&pos)
+                .await?;
+            let new_local_pos = Self::pos_to_index(pos);
+            self.players.swap(self.local_player, new_local_pos);
+            self.local_player = new_local_pos;
+            sleep(Duration::from_millis(250)).await;
+            Ok(())
+        }
+    }
+
+    pub async fn move_team_members(
+        client: &Client,
+        local_member: &LolLobbyLobbyParticipantDto,
+        teams: &[&[&LolLobbyLobbyParticipantDto]],
+    ) -> Result<(), Error> {
+        let mut arena_teams = ArenaTeam::from_player_list(client, local_member, teams);
+        loop {
+            let Some(next_pos) = arena_teams
+                .pos_of_player_with_target_at_local_player()
+                .or_else(|| arena_teams.open_spot())
+                .or_else(|| arena_teams.first_player_in_incorrect_position())
+            else {
+                break;
+            };
+            log::info!("At least one player in incorrect position");
+            arena_teams.swap_local_to_pos(next_pos).await?;
+        }
+        Ok(())
+    }
 }
