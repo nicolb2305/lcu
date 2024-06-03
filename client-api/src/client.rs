@@ -55,7 +55,7 @@ impl Client {
         );
         let client = reqwest::ClientBuilder::new()
             // Fast detection of client being closed
-            .connect_timeout(Duration::new(0, 100_000_000))
+            .connect_timeout(Duration::from_millis(100))
             .add_root_certificate(cert)
             .default_headers(headers)
             .build()?;
