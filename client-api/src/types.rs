@@ -1,3 +1,4 @@
+#![allow(clippy::struct_excessive_bools)]
 use crate::Error;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display};
@@ -653,4 +654,115 @@ pub struct LolLobbyCustomGameSettingsDto {
 pub struct LolLobbySubteamDataDto {
     pub subteam_index: usize,
     pub intra_subteam_position: usize,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LolChampionMasteryChampionMastery {
+    pub puuid: String,
+    pub champion_id: i32,
+    pub champion_level: i32,
+    pub champion_points: i32,
+    pub last_play_time: u64,
+    pub champion_points_since_last_level: i32,
+    pub champion_points_until_next_level: i32,
+    pub mark_required_for_next_level: i32,
+    pub tokens_earned: i32,
+    pub champion_season_milestone: i32,
+    pub milestone_grades: Vec<String>,
+    pub next_season_milestone: LolChampionMasterySeasonMilestoneRequireAndRewards,
+    pub highest_grade: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LolChampionMasterySeasonMilestoneRequireAndRewards {
+    pub require_grade_counts: HashMap<String, i16>,
+    pub reward_marks: u16,
+    pub bonus: bool,
+    pub reward_config: LolChampionMasteryRewardConfigurationEntry,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LolChampionMasteryRewardConfigurationEntry {
+    pub reward_value: String,
+    pub maximum_reward: i32,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LolChallengesUIChallenge {
+    pub id: i64,
+    pub name: String,
+    pub description: String,
+    pub description_short: String,
+    pub icon_path: String,
+    pub category: String,
+    pub next_level_icon_path: String,
+    pub current_level: String,
+    pub next_level: String,
+    pub previous_level: String,
+    pub previous_value: f64,
+    pub current_value: f64,
+    pub current_threshold: f64,
+    pub next_threshold: f64,
+    pub points_awarded: i64,
+    pub percentile: f64,
+    pub current_level_achieved_time: i64,
+    pub position: i32,
+    pub players_in_level: i32,
+    pub is_apex: bool,
+    pub is_capstone: bool,
+    pub game_modes: Vec<String>,
+    pub friends_at_levels: Vec<LolChallengesFriendLevelsData>,
+    pub parent_id: i64,
+    pub parent_name: String,
+    pub children_ids: Vec<i64>,
+    pub capstone_group_id: i64,
+    pub capstone_group_name: String,
+    pub source: String,
+    pub thresholds: HashMap<String, LolChallengesUIChallengeThreshold>,
+    pub level_to_icon_path: HashMap<String, String>,
+    pub value_mapping: String,
+    pub has_leaderboard: bool,
+    pub is_reverse_direction: bool,
+    pub priority: f64,
+    pub id_list_type: LolChallengesChallengeRequirementMappingName,
+    pub available_ids: Vec<i32>,
+    pub completed_ids: Vec<i32>,
+    pub retire_timestamp: i64,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LolChallengesFriendLevelsData {
+    pub level: String,
+    pub friends: Vec<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LolChallengesUIChallengeThreshold {
+    pub value: f64,
+    pub rewards: Vec<LolChallengesUIChallengeReward>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum LolChallengesChallengeRequirementMappingName {
+    #[default]
+    None = 0,
+    Champion = 1,
+    ChampionSkin = 2,
+    Item = 3,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LolChallengesUIChallengeReward {
+    pub category: String,
+    pub quantity: u64,
+    pub name: String,
+    pub asset: String,
 }

@@ -72,4 +72,24 @@ mod tests {
             .await?;
         Ok(())
     }
+
+    #[tokio::test]
+    async fn get_mastery() -> Result<(), Error> {
+        let client = Client::new()?;
+        let mastery = client
+            .get_lol_champion_mastery_v1_local_player_champion_mastery()
+            .await?;
+        dbg!(mastery);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn get_challenges() -> Result<(), Error> {
+        let client = Client::new()?;
+        let challenges = client
+            .get_lol_challenges_v1_challenges_local_player()
+            .await?;
+        dbg!(challenges);
+        Ok(())
+    }
 }
