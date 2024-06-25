@@ -6,6 +6,8 @@ use types::ApiError;
 pub mod actions;
 #[cfg(feature = "client")]
 pub mod client;
+#[cfg(feature = "ddragon")]
+pub mod ddragon;
 #[cfg(feature = "endpoints")]
 pub mod endpoints;
 #[cfg(feature = "types")]
