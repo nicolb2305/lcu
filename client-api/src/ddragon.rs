@@ -30,44 +30,44 @@ pub mod types {
     #[derive(Deserialize, Serialize, Debug, Clone, Default)]
     pub struct Champion {
         #[serde(rename = "type")]
-        type_: String,
-        format: String,
-        version: String,
-        data: HashMap<String, ChampionData>,
+        pub type_: String,
+        pub format: String,
+        pub version: String,
+        pub data: HashMap<String, ChampionData>,
     }
 
     #[derive(Deserialize, Serialize, Debug, Clone, Default)]
     pub struct ChampionData {
-        version: String,
-        id: String,
-        key: String,
-        name: String,
-        title: String,
-        blurb: String,
-        info: ChampionInfo,
-        image: ChampionImage,
-        tags: Vec<ChampionTag>,
-        partype: ChampionResource,
-        stats: ChampionStats,
+        pub version: String,
+        pub id: String,
+        pub key: String,
+        pub name: String,
+        pub title: String,
+        pub blurb: String,
+        pub info: ChampionInfo,
+        pub image: ChampionImage,
+        pub tags: Vec<ChampionTag>,
+        pub partype: ChampionResource,
+        pub stats: ChampionStats,
     }
 
     #[derive(Deserialize, Serialize, Debug, Clone, Default)]
     pub struct ChampionInfo {
-        attack: u8,
-        defense: u8,
-        magic: u8,
-        difficulty: u8,
+        pub attack: u8,
+        pub defense: u8,
+        pub magic: u8,
+        pub difficulty: u8,
     }
 
     #[derive(Deserialize, Serialize, Debug, Clone, Default)]
     pub struct ChampionImage {
-        full: String,
-        sprite: String,
-        group: String,
-        x: u32,
-        y: u32,
-        w: u32,
-        h: u32,
+        pub full: String,
+        pub sprite: String,
+        pub group: String,
+        pub x: u32,
+        pub y: u32,
+        pub w: u32,
+        pub h: u32,
     }
 
     #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -103,26 +103,26 @@ pub mod types {
 
     #[derive(Deserialize, Serialize, Debug, Clone, Default)]
     pub struct ChampionStats {
-        hp: f32,
-        hpperlevel: f32,
-        mp: f32,
-        mpperlevel: f32,
-        movespeed: f32,
-        armor: f32,
-        armorperlevel: f32,
-        spellblock: f32,
-        spellblockperlevel: f32,
-        attackrange: f32,
-        hpregen: f32,
-        hpregenperlevel: f32,
-        mpregen: f32,
-        mpregenperlevel: f32,
-        crit: f32,
-        critperlevel: f32,
-        attackdamage: f32,
-        attackdamageperlevel: f32,
-        attackspeedperlevel: f32,
-        attackspeed: f32,
+        pub hp: f32,
+        pub hpperlevel: f32,
+        pub mp: f32,
+        pub mpperlevel: f32,
+        pub movespeed: f32,
+        pub armor: f32,
+        pub armorperlevel: f32,
+        pub spellblock: f32,
+        pub spellblockperlevel: f32,
+        pub attackrange: f32,
+        pub hpregen: f32,
+        pub hpregenperlevel: f32,
+        pub mpregen: f32,
+        pub mpregenperlevel: f32,
+        pub crit: f32,
+        pub critperlevel: f32,
+        pub attackdamage: f32,
+        pub attackdamageperlevel: f32,
+        pub attackspeedperlevel: f32,
+        pub attackspeed: f32,
     }
 }
 
