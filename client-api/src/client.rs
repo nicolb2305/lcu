@@ -99,6 +99,18 @@ impl Client {
             .into()
     }
 
+    pub(crate) async fn patch_empty_response<R: Serialize + Sync>(
+        &self,
+        endpoint: &str,
+        body: &R,
+    ) -> Result<(), Error> {
+        log::info!("PATCH {endpoint}");
+        let mut url = self.base_url.clone();
+        url.set_path(endpoint);
+        self.client.patch(url).json(body).send().await?;
+        Ok(())
+    }
+
     pub(crate) async fn put_empty_response<R: Serialize + Sync>(
         &self,
         endpoint: &str,

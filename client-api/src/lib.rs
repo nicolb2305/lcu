@@ -49,11 +49,13 @@ pub enum Error {
     WrongGameMode,
     #[error("Could not move player to given location")]
     PlayerMove,
+    #[error("Custom error")]
+    Custom(String),
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{client::Client, types::LolLobbySubteamDataDto, Error};
+    use crate::{actions::select_champion, client::Client, types::LolLobbySubteamDataDto, Error};
 
     #[tokio::test]
     async fn get_lobby() -> Result<(), Error> {
@@ -92,6 +94,13 @@ mod tests {
             .get_lol_challenges_v1_challenges_local_player()
             .await?;
         dbg!(challenges);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn pick_champ() -> Result<(), Error> {
+        let client = Client::new()?;
+        select_champion(&client, 4).await.unwrap();
         Ok(())
     }
 }

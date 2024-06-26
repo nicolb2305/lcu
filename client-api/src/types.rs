@@ -1,6 +1,7 @@
 #![allow(clippy::struct_excessive_bools)]
 use crate::Error;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::{collections::HashMap, fmt::Display};
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
@@ -765,4 +766,108 @@ pub struct LolChallengesUIChallengeReward {
     pub quantity: u64,
     pub name: String,
     pub asset: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LolChampSelectLegacyChampSelectSession {
+    pub timer: LolChampSelectLegacyChampSelectTimer,
+    pub chat_details: LolChampSelectLegacyChampSelectChatRoomDetails,
+    pub my_team: Vec<LolChampSelectLegacyChampSelectPlayerSelection>,
+    pub their_team: Vec<LolChampSelectLegacyChampSelectPlayerSelection>,
+    pub trades: Vec<LolChampSelectLegacyChampSelectTradeContract>,
+    pub actions: Vec<Value>,
+    pub bans: LolChampSelectLegacyChampSelectBannedChampions,
+    pub local_player_cell_id: i64,
+    pub is_spectating: bool,
+    pub allow_skin_selection: bool,
+    pub allow_battle_boost: bool,
+    pub allow_rerolling: bool,
+    pub rerolls_remaining: u64,
+    pub has_simultaneous_bans: bool,
+    pub has_simultaneous_picks: bool,
+    pub is_custom_game: bool,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LolChampSelectLegacyChampSelectTimer {
+    pub adjusted_time_left_in_phase: i64,
+    pub total_time_in_phase: i64,
+    pub phase: String,
+    pub is_infinite: bool,
+    pub internal_now_in_epoch_ms: u64,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LolChampSelectLegacyChampSelectChatRoomDetails {
+    pub multi_user_chat_id: String,
+    pub multi_user_chat_password: String,
+    pub muc_jwt_dto: LolChampSelectLegacyMucJwtDto,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LolChampSelectLegacyMucJwtDto {
+    pub jwt: String,
+    pub channel_claim: String,
+    pub domain: String,
+    pub target_region: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LolChampSelectLegacyChampSelectPlayerSelection {
+    pub cell_id: i64,
+    pub champion_id: i32,
+    pub selected_skin_id: i32,
+    pub ward_skin_id: i64,
+    pub spell1_id: u64,
+    pub spell2_id: u64,
+    pub team: i32,
+    pub assigned_position: String,
+    pub champion_pick_intent: i32,
+    pub player_type: String,
+    pub summoner_id: u64,
+    pub puuid: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LolChampSelectLegacyChampSelectTradeContract {
+    pub id: i64,
+    pub cell_id: i64,
+    pub state: LolChampSelectLegacyChampSelectTradeState,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum LolChampSelectLegacyChampSelectTradeState {
+    #[default]
+    Available = 1,
+    Busy = 2,
+    Invalid = 3,
+    Received = 4,
+    Sent = 5,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LolChampSelectLegacyChampSelectBannedChampions {
+    pub my_team_bans: Vec<i32>,
+    pub their_team_bans: Vec<i32>,
+    pub num_bans: i32,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LolChampSelectChampSelectAction {
+    pub id: Option<i64>,
+    pub actor_cell_id: Option<i64>,
+    pub champion_id: Option<i32>,
+    #[serde(rename = "type")]
+    pub type_: Option<String>,
+    pub completed: Option<bool>,
+    pub is_ally_action: Option<bool>,
 }

@@ -4,11 +4,12 @@ use std::collections::HashMap;
 use crate::{
     client::Client,
     types::{
-        LolChallengesUIChallenge, LolChampionMasteryChampionMastery,
-        LolChatConversationMessageResource, LolChatConversationResource, LolChatFriendResource,
-        LolLobbyGameModeDto, LolLobbyLobbyChangeGameDto, LolLobbyLobbyDto,
-        LolLobbyLobbyInvitationDto, LolLobbySubteamDataDto, LolMatchHistoryMatchHistoryGame,
-        LolMatchHistoryMatchHistoryList,
+        LolChallengesUIChallenge, LolChampSelectChampSelectAction,
+        LolChampSelectLegacyChampSelectPlayerSelection, LolChampSelectLegacyChampSelectSession,
+        LolChampionMasteryChampionMastery, LolChatConversationMessageResource,
+        LolChatConversationResource, LolChatFriendResource, LolLobbyGameModeDto,
+        LolLobbyLobbyChangeGameDto, LolLobbyLobbyDto, LolLobbyLobbyInvitationDto,
+        LolLobbySubteamDataDto, LolMatchHistoryMatchHistoryGame, LolMatchHistoryMatchHistoryList,
     },
     Error,
 };
@@ -106,6 +107,32 @@ impl Client {
         &self,
     ) -> Result<HashMap<String, LolChallengesUIChallenge>, Error> {
         self.get("/lol-challenges/v1/challenges/local-player", &None::<()>)
+            .await
+    }
+
+    pub async fn get_lol_champ_select_legacy_v1_session(
+        &self,
+    ) -> Result<LolChampSelectLegacyChampSelectSession, Error> {
+        self.get("/lol-champ-select-legacy/v1/session", &None::<()>)
+            .await
+    }
+
+    pub async fn get_lol_champ_select_legacy_v1_session_my_selection(
+        &self,
+    ) -> Result<LolChampSelectLegacyChampSelectPlayerSelection, Error> {
+        self.get(
+            "/lol-champ-select-legacy/v1/session/my-selection",
+            &None::<()>,
+        )
+        .await
+    }
+
+    pub async fn patch_lol_champ_select_v1_session_actions_by_id(
+        &self,
+        id: u64,
+        body: LolChampSelectChampSelectAction,
+    ) -> Result<(), Error> {
+        self.patch_empty_response(&format!("/lol-champ-select/v1/session/actions/{id}"), &body)
             .await
     }
 }

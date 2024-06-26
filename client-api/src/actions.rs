@@ -1,10 +1,10 @@
 use crate::{
     client::Client,
     types::{
-        LolChatConversationMessageResource, LolChatFriendResource, LolLobbyLobbyChangeGameDto,
-        LolLobbyLobbyCustomGameConfiguration, LolLobbyLobbyCustomGameLobby,
-        LolLobbyLobbyInvitationDto, LolLobbyQueueCustomGameSpectatorPolicy,
-        LolLobbyQueueGameTypeConfig,
+        LolChampSelectChampSelectAction, LolChatConversationMessageResource, LolChatFriendResource,
+        LolLobbyLobbyChangeGameDto, LolLobbyLobbyCustomGameConfiguration,
+        LolLobbyLobbyCustomGameLobby, LolLobbyLobbyInvitationDto,
+        LolLobbyQueueCustomGameSpectatorPolicy, LolLobbyQueueGameTypeConfig,
     },
     Error,
 };
@@ -262,6 +262,51 @@ pub async fn invite_from_previous(client: &Client) -> Result<(), Error> {
         .collect();
 
     invite_to_lobby(client, &summoners).await?;
+
+    Ok(())
+}
+
+/// Selects the champion with the given championId
+///
+/// # Errors
+/// Fails if the client api cannot be reached, if the player is not currently in champion select
+/// or if the champion cannot be hovered
+pub async fn select_champion(client: &Client, champion_id: i32) -> Result<(), Error> {
+    let cell_id = client
+        .get_lol_champ_select_legacy_v1_session_my_selection()
+        .await?
+        .cell_id;
+
+    let actions = client
+        .get_lol_champ_select_legacy_v1_session()
+        .await?
+        .actions
+        .first()
+        .ok_or(Error::Custom("Vector contained no elements".into()))?
+        .as_array()
+        .ok_or(Error::Custom("Failed to find outer vector".into()))?
+        .iter()
+        .filter_map(serde_json::Value::as_object)
+        .find(|x| {
+            x.get("actorCellId")
+                .and_then(serde_json::Value::as_i64)
+                .is_some_and(|x| x == cell_id)
+        })
+        .ok_or(Error::Custom("Failed to find matching cellId".into()))?
+        .get("id")
+        .ok_or(Error::Custom("Failed to find action id".into()))?
+        .as_u64()
+        .ok_or(Error::Custom("Failed to convert action id to u64".into()))?;
+
+    client
+        .patch_lol_champ_select_v1_session_actions_by_id(
+            actions,
+            LolChampSelectChampSelectAction {
+                champion_id: Some(champion_id),
+                ..Default::default()
+            },
+        )
+        .await?;
 
     Ok(())
 }
