@@ -870,6 +870,7 @@ pub struct LolChampSelectChampSelectAction {
     pub type_: Option<String>,
     pub completed: Option<bool>,
     pub is_ally_action: Option<bool>,
+    pub is_in_progress: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
@@ -901,7 +902,7 @@ pub struct LolChampSelectChampSelectSession {
     pub their_team: Vec<LolChampSelectChampSelectPlayerSelection>,
     pub trades: Vec<LolChampSelectChampSelectTradeContract>,
     pub pick_order_swaps: Vec<LolChampSelectChampSelectSwapContract>,
-    pub actions: Vec<Value>,
+    pub actions: Vec<Vec<LolChampSelectChampSelectAction>>,
     pub bans: LolChampSelectChampSelectBannedChampions,
     pub local_player_cell_id: i64,
     pub is_spectating: bool,

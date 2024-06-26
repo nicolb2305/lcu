@@ -125,7 +125,7 @@ impl Client {
 
     pub async fn patch_lol_champ_select_v1_session_actions_by_id(
         &self,
-        id: u64,
+        id: i64,
         body: LolChampSelectChampSelectAction,
     ) -> Result<(), Error> {
         self.patch_empty_response(&format!("/lol-champ-select/v1/session/actions/{id}"), &body)

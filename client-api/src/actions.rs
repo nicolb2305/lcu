@@ -281,22 +281,16 @@ pub async fn select_champion(client: &Client, champion_id: i32) -> Result<(), Er
         .get_lol_champ_select_v1_session()
         .await?
         .actions
-        .first()
-        .ok_or(Error::Custom("Vector contained no elements".into()))?
-        .as_array()
-        .ok_or(Error::Custom("Failed to find outer vector".into()))?
-        .iter()
-        .filter_map(serde_json::Value::as_object)
-        .find(|x| {
-            x.get("actorCellId")
-                .and_then(serde_json::Value::as_i64)
-                .is_some_and(|x| x == cell_id)
+        .into_iter()
+        .flatten()
+        .find(|action| {
+            action.actor_cell_id.is_some_and(|x| x == cell_id)
+                && action.is_in_progress.unwrap_or(false)
+                && action.type_.clone().is_some_and(|x| x == "pick")
         })
         .ok_or(Error::Custom("Failed to find matching cellId".into()))?
-        .get("id")
-        .ok_or(Error::Custom("Failed to find action id".into()))?
-        .as_u64()
-        .ok_or(Error::Custom("Failed to convert action id to u64".into()))?;
+        .id
+        .ok_or(Error::Custom("Failed to find action id".into()))?;
 
     client
         .patch_lol_champ_select_v1_session_actions_by_id(
