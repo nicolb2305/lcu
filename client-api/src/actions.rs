@@ -273,12 +273,12 @@ pub async fn invite_from_previous(client: &Client) -> Result<(), Error> {
 /// or if the champion cannot be hovered
 pub async fn select_champion(client: &Client, champion_id: i32) -> Result<(), Error> {
     let cell_id = client
-        .get_lol_champ_select_legacy_v1_session_my_selection()
+        .get_lol_champ_select_v1_session_my_selection()
         .await?
         .cell_id;
 
     let actions = client
-        .get_lol_champ_select_legacy_v1_session()
+        .get_lol_champ_select_v1_session()
         .await?
         .actions
         .first()

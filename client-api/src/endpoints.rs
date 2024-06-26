@@ -5,7 +5,7 @@ use crate::{
     client::Client,
     types::{
         LolChallengesUIChallenge, LolChampSelectChampSelectAction,
-        LolChampSelectLegacyChampSelectPlayerSelection, LolChampSelectLegacyChampSelectSession,
+        LolChampSelectChampSelectPlayerSelection, LolChampSelectChampSelectSession,
         LolChampionMasteryChampionMastery, LolChatConversationMessageResource,
         LolChatConversationResource, LolChatFriendResource, LolLobbyGameModeDto,
         LolLobbyLobbyChangeGameDto, LolLobbyLobbyDto, LolLobbyLobbyInvitationDto,
@@ -110,21 +110,17 @@ impl Client {
             .await
     }
 
-    pub async fn get_lol_champ_select_legacy_v1_session(
+    pub async fn get_lol_champ_select_v1_session(
         &self,
-    ) -> Result<LolChampSelectLegacyChampSelectSession, Error> {
-        self.get("/lol-champ-select-legacy/v1/session", &None::<()>)
-            .await
+    ) -> Result<LolChampSelectChampSelectSession, Error> {
+        self.get("/lol-champ-select/v1/session", &None::<()>).await
     }
 
-    pub async fn get_lol_champ_select_legacy_v1_session_my_selection(
+    pub async fn get_lol_champ_select_v1_session_my_selection(
         &self,
-    ) -> Result<LolChampSelectLegacyChampSelectPlayerSelection, Error> {
-        self.get(
-            "/lol-champ-select-legacy/v1/session/my-selection",
-            &None::<()>,
-        )
-        .await
+    ) -> Result<LolChampSelectChampSelectPlayerSelection, Error> {
+        self.get("/lol-champ-select/v1/session/my-selection", &None::<()>)
+            .await
     }
 
     pub async fn patch_lol_champ_select_v1_session_actions_by_id(
