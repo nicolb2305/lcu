@@ -49,12 +49,7 @@ pub async fn randomize_teams(client: &Client) -> Result<(), Error> {
     // Create teams
     let lobby = client.get_lol_lobby_v2_lobby().await?;
 
-    let gamemode: Queues = client
-        .get_lol_lobby_v1_parties_gamemode()
-        .await?
-        .queue_id
-        .ok_or(Error::QueueNotFoundError)?
-        .into();
+    let gamemode: Queues = lobby.game_config.queue_id.into();
 
     let mut players: Vec<_> = lobby.members.iter().collect();
 
